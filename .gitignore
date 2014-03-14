@@ -16,3 +16,16 @@
 *.exe
 *.out
 *.app
+/logs/
+/RP-UART-TEST1/
+/cmsis/
+/cmsis_boot/
+/cmsis_lib/
+/STM32F4-Discovery/
+/syscalls/
+/RP-UART-TEST1.cogui
+/RP-UART-TEST1.comarker
+/RP-UART-TEST1.coproj
+/stm32f4_discovery_callbacks.c
+/error.txt
+/info.txt
