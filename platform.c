@@ -6,6 +6,15 @@
 #include "platform.h"
 
 MotorPlatform MP;
+/*
+ * States:
+ * 0: Stop
+ * 1: Forwards
+ * 2: Backwards
+ * 3: Left
+ * 4: Right
+ *
+ */
 
 void init_platform(void) {
 	MP._speed = 100;
@@ -61,27 +70,83 @@ void init_platform(void) {
 	GPIO_ResetBits(GPIOE, GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12);
 
 }
+void process_platform() {
 
-void go_forward(void) {
-	stop();
+	switch(MP._state){
+		case(0):
+			_stop();
+			break;
+		case(1):
+			_go_forward();
+			break;
+		case(2):
+			_go_backward();
+			break;
+		case(3):
+			_turn_left();
+			break;
+		case(4):
+			_turn_right();
+			break;
+	}
+}
+
+int set_forward() {
+	MP._state = 1;
+	if(MP._state == 1) {
+		return 0;
+	}
+	return -1;
+}
+int set_backward() {
+	MP._state = 2;
+	if(MP._state == 2) {
+		return 0;
+	}
+	return -1;
+}
+int set_left() {
+	MP._state = 3;
+	if(MP._state == 3) {
+		return 0;
+	}
+	return -1;
+}
+int set_right() {
+	MP._state = 4;
+	if(MP._state == 4) {
+		return 0;
+	}
+	return -1;
+}
+int set_stop() {
+	MP._state = 0;
+	if(MP._state == 0) {
+		return 0;
+	}
+	return -1;
+}
+
+void _go_forward(void) {
+	_stop();
 	GPIO_SetBits(GPIOE, MP._left_side._forward_pin|MP._right_side._forward_pin);
 }
 
-void go_backward(void) {
-	stop();
+void _go_backward(void) {
+	_stop();
 	GPIO_SetBits(GPIOE, MP._left_side._backward_pin|MP._right_side._backward_pin);
 }
 
-void turn_left(void) {
-	stop();
+void _turn_left(void) {
+	_stop();
 	GPIO_SetBits(GPIOE, MP._left_side._forward_pin|MP._right_side._backward_pin);
 }
 
-void turn_right(void) {
-	stop();
+void _turn_right(void) {
+	_stop();
 	GPIO_SetBits(GPIOE, MP._left_side._backward_pin|MP._right_side._forward_pin);
 }
 
-void stop(void) {
+void _stop(void) {
 	GPIO_ResetBits(GPIOE, MP._left_side._forward_pin|MP._right_side._forward_pin|MP._left_side._backward_pin|MP._right_side._backward_pin);
 }

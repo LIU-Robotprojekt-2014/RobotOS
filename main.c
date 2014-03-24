@@ -4,9 +4,13 @@
 #include <stm32f4xx_usart.h>
 #include <stm32f4xx_gpio.h>
 #include <stm32f4xx_adc.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "stm32f4_discovery.h"
 #include <math.h>
 #include "platform.h"
+#include "sensors.h"
 volatile char StringLoop[] = "The quick brown fox jumps over the lazy dog\r\n";
 
 /*
@@ -265,12 +269,23 @@ int main(void) {
   //SumoPlatform* MotorCtrl = initMotorCtrl();
 
   init_platform();
+  init_sensors2();
+  uint32_t i = 0;
   while(1) {
-	  go_forward();
-	  go_backward();
-	  turn_left();
-	  turn_right();
-	  stop();
+	  i++;
+
+	  /*
+	  set_forward();
+	  process_platform();
+	  set_backward();
+	  process_platform();
+	  set_left();
+	  process_platform();
+	  set_right();
+	  process_platform();
+	  set_stop();
+	  process_platform();
+	  */
   }
 
   /*

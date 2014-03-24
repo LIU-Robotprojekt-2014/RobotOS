@@ -19,10 +19,16 @@ typedef struct MotorPlatform {
 
 
 void init_platform(void);
-void go_forward(void);
-void go_backward(void);
-void turn_left(void);
-void turn_right(void);
-void stop(void);
+void process_platform();
+int set_forward();
+int set_backward();
+int set_left();
+int set_right();
+int set_stop();
+void _go_forward(void);
+void _go_backward(void);
+void _turn_left(void);
+void _turn_right(void);
+void _stop(void);
 
 #endif
