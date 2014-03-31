@@ -21,11 +21,14 @@ typedef struct BluetoothUnit {
 
    volatile char _buffer[BLUETOOTH_BUFFER_SIZE];
    volatile char _package[BLUETOOTH_BUFFER_SIZE];
-   volatile uint8_t _tx_counter;
    volatile uint8_t _rx_counter;
    volatile uint8_t _flags; //Bitwise, Bit0: sof rec., Bit1: linefeed recv. Bit7: clean buffer and flags
    volatile uint8_t _sol_position;
    volatile uint8_t _eol_position;
+   //Send variables
+   volatile char _send_buffer[BLUETOOTH_BUFFER_SIZE];
+   volatile uint8_t _tx_counter;
+   volatile uint8_t _chars_to_send;
 
 } Bluetoothunit;
 
@@ -33,8 +36,10 @@ void init_bluetooth(void);
 void USART3_IRQHandler(void);
 void process_bluetooth(void);
 void parse_package(void);
+void _send_package(char* arr, uint8_t lenght);
 void _clean_buffer(void);
 void _clean_package(void);
+void _clean_send_buffer(void);
 void _append_to_buffer(char c);
 uint8_t _buffer_count(void);
 uint8_t _clonePackageInBufferToPackage(void);
