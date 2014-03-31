@@ -1,0 +1,42 @@
+#ifndef BLUETOOTH_H
+#define BLUETOOTH_H
+
+#define BLUETOOTH_BUFFER_SIZE 60
+
+//#define BT_SOL	0x01
+//#define BT_EOL	0x0A
+
+#define BT_SOL	122
+#define BT_EOL	120
+
+#define BT_SOL_FLAG 0x01
+#define BT_EOL_FLAG 0x02
+#define BT_RESET 0x80
+
+
+typedef struct BluetoothUnit {
+   uint32_t _baudrate;
+   uint16_t _tx_pin;
+   uint16_t _rx_pin;
+
+   volatile char _buffer[BLUETOOTH_BUFFER_SIZE];
+   volatile char _package[BLUETOOTH_BUFFER_SIZE];
+   volatile uint8_t _tx_counter;
+   volatile uint8_t _rx_counter;
+   volatile uint8_t _flags; //Bitwise, Bit0: sof rec., Bit1: linefeed recv. Bit7: clean buffer and flags
+   volatile uint8_t _sol_position;
+   volatile uint8_t _eol_position;
+
+} Bluetoothunit;
+
+void init_bluetooth(void);
+void USART3_IRQHandler(void);
+void process_bluetooth(void);
+void parse_package(void);
+void _clean_buffer(void);
+void _clean_package(void);
+void _append_to_buffer(char c);
+uint8_t _buffer_count(void);
+uint8_t _clonePackageInBufferToPackage(void);
+
+#endif
