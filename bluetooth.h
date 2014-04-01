@@ -13,6 +13,8 @@
 #define BT_EOL_FLAG 0x02
 #define BT_RESET 0x80
 
+#define BT_TX_BUSY 0x01
+#define BT_TX_DONE 0x02
 
 typedef struct BluetoothUnit {
    uint32_t _baudrate;
@@ -20,15 +22,16 @@ typedef struct BluetoothUnit {
    uint16_t _rx_pin;
 
    volatile char _buffer[BLUETOOTH_BUFFER_SIZE];
-   volatile char _package[BLUETOOTH_BUFFER_SIZE];
+   char _package[BLUETOOTH_BUFFER_SIZE];
    volatile uint8_t _rx_counter;
    volatile uint8_t _flags; //Bitwise, Bit0: sof rec., Bit1: linefeed recv. Bit7: clean buffer and flags
    volatile uint8_t _sol_position;
    volatile uint8_t _eol_position;
    //Send variables
-   volatile char _send_buffer[BLUETOOTH_BUFFER_SIZE];
+   char _send_buffer[BLUETOOTH_BUFFER_SIZE];
    volatile uint8_t _tx_counter;
    volatile uint8_t _chars_to_send;
+   volatile uint8_t _tx_flags;
 
 } Bluetoothunit;
 
@@ -36,7 +39,7 @@ void init_bluetooth(void);
 void USART3_IRQHandler(void);
 void process_bluetooth(void);
 void parse_package(void);
-void _send_package(char* arr, uint8_t lenght);
+int8_t _send_package(char* arr, uint8_t lenght);
 void _clean_buffer(void);
 void _clean_package(void);
 void _clean_send_buffer(void);

@@ -1,11 +1,13 @@
 #include <stm32f4xx.h>
 #include <misc.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stm32f4xx_gpio.h>
 #include <stm32f4xx_rcc.h>
 #include <stm32f4xx_usart.h>
 #include "stm32f4_discovery.h"
 #include "bluetooth.h"
+#include "platform.h"
 
 Bluetoothunit BT;
 
@@ -15,6 +17,7 @@ void init_bluetooth(void) {
 	BT._rx_pin	 = GPIO_Pin_9;
 	BT._tx_counter = 0;
 	BT._rx_counter = 0;
+	BT._tx_flags   = 0;
 	BT._chars_to_send = 0;
 	BT._flags	   = 0;
 	BT._sol_position = 0xFF;
@@ -95,13 +98,13 @@ void USART3_IRQHandler(void) {
 		  USART_SendData(USART3, BT._send_buffer[BT._tx_counter++]);
 	  } else {
 		  USART_ITConfig(USART3, USART_IT_TXE, DISABLE);
-		  _clean_send_buffer();
+		  BT._tx_flags |= BT_TX_DONE;
 	  }
 
       if(BT._tx_counter >= BT._chars_to_send) {
     	  /* Disable the USART3 Transmit interrupt */
     	  USART_ITConfig(USART3, USART_IT_TXE, DISABLE);
-    	  _clean_send_buffer();
+    	  BT._tx_flags |= BT_TX_DONE;
       }
     }
 
@@ -111,7 +114,7 @@ void process_bluetooth(void) {
 	if((BT._flags&BT_SOL_FLAG) && (BT._flags&BT_EOL_FLAG)) {
 		uint8_t lenght = _clonePackageInBufferToPackage();
 		BT._flags = BT_RESET;
-		_send_package("Got it!\n", 8);
+		//_send_package("Got it!\n", 8);
 		if(lenght >= 4) {
 			parse_package();
 		}
@@ -124,44 +127,69 @@ void parse_package(void) {
 		if(BT._package[1] == '0') {
 			if(BT._package[2] == '1'){
 
+				if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
+					set_forward();
+					_send_package("Moving forward, Sire!\n", 22);
+				} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
+					set_backward();
+					_send_package("Moving backward, Sire!\n", 23);
+				} else if (strncmp(&(BT._package[4]), "left", 4) == 0) {
+					set_left();
+					_send_package("Turning left, Sire!\n", 20);
+				} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
+					set_right();
+					_send_package("Turning right, Sire!\n", 21);
+				} else {
+					set_stop();
+					_send_package("Stopping, Sire!\n", 16);
+				}
 			} else if (BT._package[2] == '2'){
-
+				_send_package("Got M02 command!\n", 17);
 			}
 		}
 	} else if(BT._package[0] == 'c') {
 		if(BT._package[1] == '0') {
 			if(BT._package[2] == '1'){
-
+				_send_package("Got C01 command!\n", 17);
 			} else if (BT._package[2] == '2'){
-
+				_send_package("Got C02 command!\n", 17);
 			}
 		}
 	} else if(BT._package[0] == 'a') {
 		if(BT._package[1] == '0') {
 			if(BT._package[2] == '1'){
-
+				_send_package("Got A01 command!\n", 17);
 			} else if (BT._package[2] == '2'){
-
+				_send_package("Got A02 command!\n", 17);
 			}
 		}
 	}
 
 }
-void _send_package(char* arr, uint8_t lenght) {
-	uint8_t i;
-	BT._chars_to_send = 0;
-	for(i = 0; i < lenght; i++) {
-		if(arr[i] == 0x00) {
-			break;
-		}
-
-		BT._send_buffer[BT._chars_to_send++] = arr[i];
-
-		if(arr[i] == 0x0A) {
-			break;
-		}
+int8_t _send_package(char* arr, uint8_t lenght) {
+	if(BT._tx_flags&BT_TX_DONE) {
+		_clean_send_buffer();
+		BT._tx_flags = 0;
 	}
-	USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
+	if(!BT._tx_flags&BT_TX_BUSY) {
+		uint8_t i;
+		BT._chars_to_send = 0;
+		for(i = 0; i < lenght; i++) {
+			if(arr[i] == 0x00) {
+				break;
+			}
+
+			BT._send_buffer[BT._chars_to_send++] = arr[i];
+
+			if(arr[i] == 0x0A) {
+				break;
+			}
+		}
+		BT._tx_flags |= BT_TX_BUSY;
+		USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
+		return 0;
+	}
+	return BT_TX_BUSY;
 }
 
 void _clean_buffer(void) {
