@@ -17,8 +17,12 @@ typedef struct MotorPlatform {
 } MotorPlatform;
 
 
+void TIM_Config(void);
+void PWM_Config(int period);
+void PWM_SetDC(uint16_t channel,uint16_t dutycycle);
 
 void init_platform(void);
+void init_platformPWM(void);
 void process_platform();
 int set_forward();
 int set_backward();
