@@ -3,11 +3,11 @@
 
 #define BLUETOOTH_BUFFER_SIZE 60
 
-//#define BT_SOL	0x01
-//#define BT_EOL	0x0A
+#define BT_SOL	0x01
+#define BT_EOL	0x0A
 
-#define BT_SOL	122
-#define BT_EOL	120
+//#define BT_SOL	122
+//#define BT_EOL	120
 
 #define BT_SOL_FLAG 0x01
 #define BT_EOL_FLAG 0x02

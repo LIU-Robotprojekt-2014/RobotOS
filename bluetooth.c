@@ -89,7 +89,7 @@ void USART3_IRQHandler(void) {
   if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET) {
 	rcv = USART3->DR;
 	_append_to_buffer(rcv);
-	USART_SendData(USART3, rcv);
+	//USART_SendData(USART3, rcv);
   }
   if(USART_GetITStatus(USART3, USART_IT_TXE) != RESET) {
 
