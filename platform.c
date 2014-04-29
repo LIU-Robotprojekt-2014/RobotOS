@@ -7,6 +7,7 @@
 #include <stm32f4xx_tim.h>
 #include <stdio.h>
 
+
 MotorPlatform MP;
 /*
  * States:
@@ -257,4 +258,17 @@ void setLeftCalSpeed( float c){
 
 void setRightCalSpeed( float c){
 	MP._right_side._calibrate_speed = c;
+}
+
+void InitializeLEDs()
+{
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+
+    GPIO_InitTypeDef gpioStructure;
+    gpioStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
+    gpioStructure.GPIO_Mode = GPIO_Mode_OUT;
+    gpioStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOD, &gpioStructure);
+
+    GPIO_WriteBit(GPIOD, GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
 }

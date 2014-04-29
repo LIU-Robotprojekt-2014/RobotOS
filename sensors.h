@@ -25,9 +25,11 @@ typedef struct Sensors {
 
 void init_sensors(void);
 void init_sensors2(void);
+void init_rotary(void);
 void process_sensors(void);
 void getVal(uint32_t arr[]);
-
+void EXTI0_IRQHandler(void);
+uint32_t i;
 
 
 #endif

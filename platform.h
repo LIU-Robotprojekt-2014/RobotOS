@@ -35,5 +35,6 @@ void _turn_right(void);
 void _stop(void);
 void setLeftCalSpeed( float c);
 void setRightCalSpeed( float c);
+void InitializeLEDs();
 
 #endif

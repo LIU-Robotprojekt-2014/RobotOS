@@ -9,6 +9,9 @@
 #include <stm32f4xx_dma.h>
 #include <math.h>
 #include "sensors.h"
+#include <stm32f4xx_exti.h>
+#include <stm32f4xx_syscfg.h>
+
 
 Sensors S;
 volatile uint16_t ADCConvertedValue[4];
@@ -100,6 +103,71 @@ void init_sensors2(void) {
 	   ADC_SoftwareStartConv(ADC1); // Start ADC1 conversion
 }
 
+
+
+void init_rotary(void){
+	/**
+	  * @brief  configures specified GPIO pin as output.
+	  * @param  GPIOx: where x can be (A..I) to select the GPIO peripheral.
+	  * @param  GPIO_Pin: specifies the port bit to be configured in output mode.
+	  *          This parameter can be any combination of GPIO_Pin_x where x can be (0..15).
+	  * @param  GPIO_Mode: Specify GPIO Configuration i.e. input/output/ADC/AF
+	  *         This parameter can be a value of @ref GPIOMode_TypeDef
+	  * @retval None
+	  */
+
+	 /*
+	 GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	 GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; //used for digital output and PWM output
+	               //this setting does not matter for ADC and digital read
+	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
+	 GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	 GPIO_Init(GPIOB, &GPIO_InitStructure);*/
+
+	 /* Enable SYSCFG clock */
+
+		i=0;
+		GPIO_InitTypeDef  GPIO_InitStructure;
+	   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+	   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
+
+	   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+	   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+	   GPIO_Init(GPIOB, &GPIO_InitStructure);
+	   //InitGPIO(GPIOB, GPIO_Pin_0, GPIO_Mode_IN); //initialize PB1 is input
+
+	 //-------------------------
+
+	  SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, EXTI_PinSource1);
+	  NVIC_InitTypeDef   NVIC_InitStructure;
+	  EXTI_InitTypeDef   EXTI_InitStructure;
+
+	  EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+	  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+	  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+	  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	  EXTI_Init(&EXTI_InitStructure);
+
+	  NVIC_InitStructure.NVIC_IRQChannel = EXTI1_IRQn;
+	  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x00;
+	  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
+	  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	  NVIC_Init(&NVIC_InitStructure);
+
+	  //-------------------
+
+	 //attach interrupt to GPIO
+	 //Attach_GPIO_Interrupt(EXTI_PortSourceGPIOB, EXTI_PinSource1, EXTI_Line1 ,EXTI_Trigger_Rising_Falling,1 );
+
+
+
+
+
+}
+
 void process_sensors(void) {
 
 	int i;
@@ -108,11 +176,20 @@ void process_sensors(void) {
 
 		range[i]=0;
 		derp=ADCConvertedValue[i];
-		range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
+		//range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
+		range[i] = 17.77*pow(derp*3/4096, (double)(-0.9524+ 0.1258)) ;
 	}
-
-
-
 }
+
+void EXTI1_IRQHandler(void) //EXTI1 ISR
+	{
+
+	 if(EXTI_GetITStatus(EXTI_Line1) != RESET) //check if EXTI line is asserted
+	 {
+		 EXTI_ClearFlag(EXTI_Line1); //clear interrupt
+		 i++;
+		 GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+	 }
+	}
 
 
