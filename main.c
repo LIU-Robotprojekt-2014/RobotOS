@@ -1,9 +1,7 @@
 #include <stm32f4xx.h>
 #include <stm32f4xx_rcc.h>
 #include <misc.h>
-#include <stm32f4xx_usart.h>
 #include <stm32f4xx_gpio.h>
-#include <stm32f4xx_adc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +9,8 @@
 #include <math.h>
 #include "platform.h"
 #include "sensors.h"
+#include "bluetooth.h"
+
 
 int main(void) {
 
@@ -30,4 +30,4 @@ int main(void) {
 			i=0;
 		}
 	}
-}
+
