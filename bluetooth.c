@@ -128,16 +128,19 @@ void parse_package(void) {
 			if(BT._package[2] == '1'){
 
 				if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
-					set_forward();
+					//set_forward(100,100);
+					startForward(1000);
 					_send_package("Moving forward, Sire!\n", 22);
 				} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
-					set_backward();
+					set_backward(100,100);
 					_send_package("Moving backward, Sire!\n", 23);
 				} else if (strncmp(&(BT._package[4]), "left", 4) == 0) {
-					set_left();
+					//set_left(100,100);
+					startLeft();
 					_send_package("Turning left, Sire!\n", 20);
 				} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
-					set_right();
+					//set_right(100,100);
+					startRight();
 					_send_package("Turning right, Sire!\n", 21);
 				} else {
 					set_stop();

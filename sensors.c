@@ -128,6 +128,8 @@ void init_rotary(void){
 	 /* Enable SYSCFG clock */
 
 		i=0;
+		itot=0;
+
 		GPIO_InitTypeDef  GPIO_InitStructure;
 	   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 	   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
@@ -182,14 +184,15 @@ void process_sensors(void) {
 }
 
 void EXTI1_IRQHandler(void) //EXTI1 ISR
-	{
+{
 
 	 if(EXTI_GetITStatus(EXTI_Line1) != RESET) //check if EXTI line is asserted
 	 {
 		 EXTI_ClearFlag(EXTI_Line1); //clear interrupt
 		 i++;
+		 itot++;
 		 GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 	 }
-	}
+}
 
 

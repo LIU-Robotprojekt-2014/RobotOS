@@ -4,6 +4,7 @@
 #include <stm32f4xx_gpio.h>
 #include <stm32f4xx_rcc.h>
 #include "platform.h"
+#include "sensors.h"
 #include <stm32f4xx_tim.h>
 #include <stdio.h>
 
@@ -118,6 +119,7 @@ void init_platform(void) {
 	MP._Rspeed = 100;
 	MP._state = 0;
 	MP._flags = 0;
+	istop=0;
 
 	MP._left_side._calibrate_speed 	= 1;
 	MP._left_side._state 			= 0;
@@ -143,6 +145,9 @@ void init_platform(void) {
 
 void process_platform() {
 
+	if(i>=istop){
+		set_stop();
+	}
 
 	if(change==1){
 		switch(MP._state){
@@ -220,29 +225,30 @@ int set_stop() {
 
 void _go_forward(void) {
 	_stop();
-	PWM_SetDC(3,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(2,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(2,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(3,40*MP._Rspeed*MP._right_side._calibrate_speed);
 }
 
 void _go_backward(void) {
 	_stop();
-	PWM_SetDC(1,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(4,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(4,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(1,40*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
 
 void _turn_left(void) {
 	_stop();
-	PWM_SetDC(1,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(2,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(4,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(3,40*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
 
 void _turn_right(void) {
 	_stop();
-	PWM_SetDC(3,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(4,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(2,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(1,40*MP._Rspeed*MP._right_side._calibrate_speed);
 }
+
 
 void _stop(void) {
 	PWM_SetDC(1,0);
@@ -250,6 +256,24 @@ void _stop(void) {
 	PWM_SetDC(3,0);
 	PWM_SetDC(4,0);
 
+}
+
+void startForward(int distance){
+	i=0;
+	istop=distance;
+	set_forward(100,100);
+}
+
+void startLeft(void){
+	i=0;
+	istop=210;
+	set_left(100,100);
+}
+
+void startRight(void){
+	i=0;
+	istop=237;
+	set_right(100,100);
 }
 
 void setLeftCalSpeed( float c){

@@ -30,6 +30,8 @@ void process_sensors(void);
 void getVal(uint32_t arr[]);
 void EXTI0_IRQHandler(void);
 uint32_t i;
+uint32_t itot;
+uint32_t istop;
 
 
 #endif
