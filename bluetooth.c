@@ -2,6 +2,8 @@
 #include <misc.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <assert.h>
 #include <stm32f4xx_gpio.h>
 #include <stm32f4xx_rcc.h>
 #include <stm32f4xx_usart.h>
@@ -23,6 +25,8 @@ void init_bluetooth(void) {
 	BT._sol_position = 0xFF;
 	BT._eol_position = 0xFF;
 	_clean_buffer();
+
+	BT._current_order = 0;
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
@@ -124,40 +128,9 @@ void process_bluetooth(void) {
 
 void parse_package(void) {
 	if(BT._package[0] == 'm') {
-		if(BT._package[1] == '0') {
-			if(BT._package[2] == '1'){
-
-				if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
-					//set_forward(100,100);
-					startForward(1000);
-					_send_package("Moving forward, Sire!\n", 22);
-				} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
-					set_backward(100,100);
-					_send_package("Moving backward, Sire!\n", 23);
-				} else if (strncmp(&(BT._package[4]), "left", 4) == 0) {
-					//set_left(100,100);
-					startLeft();
-					_send_package("Turning left, Sire!\n", 20);
-				} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
-					//set_right(100,100);
-					startRight();
-					_send_package("Turning right, Sire!\n", 21);
-				} else {
-					set_stop();
-					_send_package("Stopping, Sire!\n", 16);
-				}
-			} else if (BT._package[2] == '2'){
-				_send_package("Got M02 command!\n", 17);
-			}
-		}
-	} else if(BT._package[0] == 'c') {
-		if(BT._package[1] == '0') {
-			if(BT._package[2] == '1'){
-				_send_package("Got C01 command!\n", 17);
-			} else if (BT._package[2] == '2'){
-				_send_package("Got C02 command!\n", 17);
-			}
-		}
+		parse_M_command();
+	} else if(BT._package[0] == 'C') {
+		parse_C_command();
 	} else if(BT._package[0] == 'a') {
 		if(BT._package[1] == '0') {
 			if(BT._package[2] == '1'){
@@ -169,6 +142,101 @@ void parse_package(void) {
 	}
 
 }
+
+void parse_M_command(void) {
+	if(BT._package[1] == '0') {
+		if(BT._package[2] == '1'){
+
+			if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
+				//set_forward(100,100);
+				startForward(1000);
+				_send_package("Moving forward, Sire!\n", 22);
+			} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
+				set_backward(100,100);
+				_send_package("Moving backward, Sire!\n", 23);
+			} else if (strncmp(&(BT._package[4]), "left", 4) == 0) {
+				startLeft();
+				_send_package("Turning left, Sire!\n", 20);
+			} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
+				startRight();
+				_send_package("Turning right, Sire!\n", 21);
+			} else {
+				set_stop();
+				_send_package("Stopping, Sire!\n", 16);
+			}
+		} else if (BT._package[2] == '2'){
+			_send_package("Got M02 command!\n", 17);
+		}
+	}
+}
+
+void parse_C_command(void) {
+	uint16_t dl_pos[2] = {0,0};
+
+	char a1[6] = {0};
+	char a2[6] = {0};
+	char a3[6] = {0};
+
+	uint16_t i = 0;
+	uint16_t distance = 0;
+	uint16_t lenght_to_wall = 0;
+	uint16_t order = 0;
+
+	if(BT._package[1] == '0') {
+		if(BT._package[2] == '1') {
+
+			for(i = 4; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[0] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[0] == 0) {
+				return;
+			}
+
+			for(i = dl_pos[0]+1; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[1] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[1] == 0) {
+				return;
+			}
+
+			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
+			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
+			memcpy(a3, &(BT._package[dl_pos[1]+1]), strlen(&(BT._package[dl_pos[1]+1])));
+			distance = atoi(a1);
+			if(distance > 1 && distance < 9999) {
+				//startForward(distance);
+				acknowledge_order(a3);
+			} else {
+				//ERROR
+			}
+		}
+	}
+}
+
+void acknowledge_order(char* order) {
+	char str1[] = {"C99|"};
+	char str3[] = {"\n"};
+	char * new_str ;
+	if((new_str = malloc(strlen(str1)+strlen(order)+strlen(str3)+1)) != NULL){
+		new_str[0] = '\0';   // ensures the memory is an empty string
+		strcat(new_str,str1);
+		strcat(new_str,order);
+		strcat(new_str,str3);
+	}
+	_send_package(new_str, strlen(new_str));
+	free(new_str);
+}
+
 int8_t _send_package(char* arr, uint8_t lenght) {
 	if(BT._tx_flags&BT_TX_DONE) {
 		_clean_send_buffer();

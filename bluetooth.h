@@ -33,12 +33,18 @@ typedef struct BluetoothUnit {
    volatile uint8_t _chars_to_send;
    volatile uint8_t _tx_flags;
 
+   //EVENT PART
+   uint16_t _current_order;
+
 } Bluetoothunit;
 
 void init_bluetooth(void);
 void USART3_IRQHandler(void);
 void process_bluetooth(void);
 void parse_package(void);
+void parse_M_command(void);
+void parse_C_command(void);
+void acknowledge_order(char* order);
 int8_t _send_package(char* arr, uint8_t lenght);
 void _clean_buffer(void);
 void _clean_package(void);
