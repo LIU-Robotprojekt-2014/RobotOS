@@ -34,6 +34,7 @@ typedef struct BluetoothUnit {
    volatile uint8_t _tx_flags;
 
    //EVENT PART
+   uint16_t _last_order;
    uint16_t _current_order;
 
 } Bluetoothunit;

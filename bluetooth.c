@@ -26,7 +26,8 @@ void init_bluetooth(void) {
 	BT._eol_position = 0xFF;
 	_clean_buffer();
 
-	BT._current_order = 0;
+	BT._last_order 		= 0;
+	BT._current_order 	= 0;
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
@@ -180,6 +181,7 @@ void parse_C_command(void) {
 	uint16_t i = 0;
 	uint16_t distance = 0;
 	uint16_t lenght_to_wall = 0;
+	uint8_t x_ing = 0;
 	uint16_t order = 0;
 
 	if(BT._package[1] == '0') {
@@ -213,12 +215,34 @@ void parse_C_command(void) {
 			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
 			memcpy(a3, &(BT._package[dl_pos[1]+1]), strlen(&(BT._package[dl_pos[1]+1])));
 			distance = atoi(a1);
+			order	 = atoi(a3);
 			if(distance > 1 && distance < 9999) {
 				//startForward(distance);
-				acknowledge_order(a3);
+				BT._current_order = a3;
+				//acknowledge_order(a3);
 			} else {
 				//ERROR
+				acknowledge_order(0);
 			}
+		} else if (BT._package[2] == '2') {
+			for(i = 4; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[0] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[0] == 0) {
+				return;
+			}
+
+			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
+			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
+			x_ing = atoi(a1);
+			order = atoi(a2);
+
+
 		}
 	}
 }
@@ -233,6 +257,8 @@ void acknowledge_order(char* order) {
 		strcat(new_str,order);
 		strcat(new_str,str3);
 	}
+	BT._last_order = BT._current_order;
+	BT._current_order = 0;
 	_send_package(new_str, strlen(new_str));
 	free(new_str);
 }
