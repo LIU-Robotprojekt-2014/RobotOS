@@ -12,11 +12,16 @@ typedef struct MotorPlatform {
    uint8_t _state; //Private
    uint8_t _Lspeed; //Private (1-100)
    uint8_t _Rspeed;
+   uint8_t _originalLspeed;
+   uint8_t _originalRspeed;
    uint8_t _flags; //
    Motor _left_side;
    Motor _right_side;
 } MotorPlatform;
 
+
+int orderComplete;
+int orderNr;
 
 void TIM_Config(void);
 void PWM_Config(int period);
@@ -33,11 +38,13 @@ void _go_backward(void);
 void _turn_left(void);
 void _turn_right(void);
 void _stop(void);
-void startLeft(void);
-void startRight(void);
-void startForward(int distance);
+void startLeft();
+void startRight();
+void startCrossing(int direction, int ordNr);
+void startForward(int distance, int distanceToWall, int ordNr);
 void setLeftCalSpeed( float c);
 void setRightCalSpeed( float c);
+int isComplete(void);
 void InitializeLEDs();
 
 #endif

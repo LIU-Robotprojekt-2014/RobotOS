@@ -9,6 +9,7 @@
 #include <stm32f4xx_dma.h>
 #include <math.h>
 #include "sensors.h"
+#include "platform.h"
 #include <stm32f4xx_exti.h>
 #include <stm32f4xx_syscfg.h>
 
@@ -16,9 +17,6 @@
 Sensors S;
 volatile uint16_t ADCConvertedValue[4];
 		float range[4];
-
-
-
 
 void init_sensors2(void) {
 	 GPIO_InitTypeDef      GPIO_InitStructure;
@@ -175,12 +173,13 @@ void process_sensors(void) {
 	int i;
 	float derp;
 	for(i=0; i<4; i++){
-
 		range[i]=0;
 		derp=ADCConvertedValue[i];
 		//range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
 		range[i] = 17.77*pow(derp*3/4096, (double)(-0.9524+ 0.1258)) ;
 	}
+	HFsensor=range[3];
+	HBsensor=range[1];
 }
 
 void EXTI1_IRQHandler(void) //EXTI1 ISR

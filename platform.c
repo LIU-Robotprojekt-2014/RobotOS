@@ -119,7 +119,6 @@ void init_platform(void) {
 	MP._Rspeed = 100;
 	MP._state = 0;
 	MP._flags = 0;
-	istop=0;
 
 	MP._left_side._calibrate_speed 	= 1;
 	MP._left_side._state 			= 0;
@@ -130,6 +129,8 @@ void init_platform(void) {
 	MP._right_side._state 			= 0;
 	MP._right_side._forward_pin 	= GPIO_Pin_10;
 	MP._right_side._backward_pin 	= GPIO_Pin_12;
+	istop=0;
+	orderComplete=0;
 
 	uint16_t pulse_width = 0;
 	/* TIM Configuration */
@@ -143,11 +144,47 @@ void init_platform(void) {
 	//PC9 kanal 4
 }
 
+void doPID(void){
+	error = targetRange-HFsensor;
+	integral = integral + error*dt;
+	derivative = (error-previous_error)/dt;
+	PIDoutput=Kp*error + Ki*integral + Kd*derivative;
+
+	if(error>0){
+		MP._Rspeed = MP._Rspeed - PIDoutput;
+	}
+	if(error<0){
+		MP._Lspeed = MP._Lspeed - PIDoutput;
+	}
+	previous_error=error;
+}
+
 void process_platform() {
 
 	if(i>=istop){
 		set_stop();
+		orderComplete=orderNr;
 	}
+
+	//Följ vägg
+	/*
+	if(MP._state==1){
+
+		if(HFsensor>wall+1 && HBsensor>wall+1){
+			MP._Rspeed = MP._originalRspeed * 0.8;
+		}
+		else if(HFsensor<wall+1 && HBsensor<wall+1){
+			MP._Lspeed = MP._originalLspeed * 0.8;
+		}
+
+		else if(HFsensor>HBsensor){
+			MP._Rspeed = MP._originalRspeed * pow((HBsensor/HFsensor),3);
+		}
+		else if(HBsensor>HFsensor){
+			MP._Lspeed = MP._originalLspeed * pow((HFsensor/HBsensor),3);
+		}
+		_go_forward();
+	} */
 
 	if(change==1){
 		switch(MP._state){
@@ -178,6 +215,8 @@ int set_forward(int ls, int rs) {
 	change=1;
 	MP._Lspeed = ls;
 	MP._Rspeed = rs;
+	MP._originalLspeed=ls;
+	MP._originalRspeed=rs;
 	MP._state = 1;
 	if(MP._state == 1) {
 		return 0;
@@ -188,6 +227,8 @@ int set_backward(int ls, int rs) {
 	change=1;
 	MP._Lspeed = ls;
 	MP._Rspeed = rs;
+	MP._originalLspeed=ls;
+	MP._originalRspeed=rs;
 	MP._state = 2;
 	if(MP._state == 2) {
 		return 0;
@@ -198,6 +239,8 @@ int set_left(int ls, int rs) {
 	change=1;
 	MP._Lspeed = ls;
 	MP._Rspeed = rs;
+	MP._originalLspeed=ls;
+	MP._originalRspeed=rs;
 	MP._state = 3;
 	if(MP._state == 3) {
 		return 0;
@@ -208,6 +251,8 @@ int set_right(int ls, int rs) {
 	change=1;
 	MP._Lspeed = ls;
 	MP._Rspeed = rs;
+	MP._originalLspeed=ls;
+	MP._originalRspeed=rs;
 	MP._state = 4;
 	if(MP._state == 4) {
 		return 0;
@@ -258,22 +303,30 @@ void _stop(void) {
 
 }
 
-void startForward(int distance){
+void startForward(int distance, int distanceToWall, int ordNr){
+	// 3000i = 2700cm
+	// 1cm = 3000/2700 i = 1.111111111 = 10/9
 	i=0;
-	istop=distance;
+	istop=distance*10/9;
+	targetRange=distanceToWall;
 	set_forward(100,100);
+	orderNr=ordNr;
 }
 
-void startLeft(void){
+void startLeft(){
 	i=0;
 	istop=210;
 	set_left(100,100);
 }
 
-void startRight(void){
+void startRight(){
 	i=0;
 	istop=237;
 	set_right(100,100);
+}
+
+void startCrossing(int direction, int ordNr){
+
 }
 
 void setLeftCalSpeed( float c){
@@ -282,6 +335,10 @@ void setLeftCalSpeed( float c){
 
 void setRightCalSpeed( float c){
 	MP._right_side._calibrate_speed = c;
+}
+
+int isComplete(void){
+	return orderComplete;
 }
 
 void InitializeLEDs()

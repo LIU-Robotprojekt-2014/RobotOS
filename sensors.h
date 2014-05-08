@@ -31,7 +31,21 @@ void getVal(uint32_t arr[]);
 void EXTI0_IRQHandler(void);
 uint32_t i;
 uint32_t itot;
-uint32_t istop;
+float istop;
+float HFsensor;
+float HBsensor;
+float wall;
 
+//PID
+float Kp;
+float Ki;
+float Kd;
+float targetRange;
+float error;
+float integral;
+float derivative;
+float PIDoutput;
+float previous_error;
+float dt;
 
 #endif
