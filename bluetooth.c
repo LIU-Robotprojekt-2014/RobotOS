@@ -116,6 +116,10 @@ void USART3_IRQHandler(void) {
 }
 
 void process_bluetooth(void) {
+	if(isComplete() == BT._current_order) {
+		acknowledge_order(BT._current_order);
+	}
+
 	if((BT._flags&BT_SOL_FLAG) && (BT._flags&BT_EOL_FLAG)) {
 		uint8_t lenght = _clonePackageInBufferToPackage();
 		BT._flags = BT_RESET;
@@ -150,7 +154,7 @@ void parse_M_command(void) {
 
 			if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
 				//set_forward(100,100);
-				startForward(1000);
+				startForward(1000, 0, 0);
 				_send_package("Moving forward, Sire!\n", 22);
 			} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
 				set_backward(100,100);
@@ -176,13 +180,13 @@ void parse_C_command(void) {
 
 	char a1[6] = {0};
 	char a2[6] = {0};
-	char a3[6] = {0};
+	char a3[6] = {0}; //Order
 
-	uint16_t i = 0;
-	uint16_t distance = 0;
+	uint16_t i 				= 0;
+	uint16_t distance 		= 0;
 	uint16_t lenght_to_wall = 0;
-	uint8_t x_ing = 0;
-	uint16_t order = 0;
+	uint8_t x_ing 			= 0;
+	uint16_t order 			= 0;
 
 	if(BT._package[1] == '0') {
 		if(BT._package[2] == '1') {
@@ -214,10 +218,11 @@ void parse_C_command(void) {
 			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
 			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
 			memcpy(a3, &(BT._package[dl_pos[1]+1]), strlen(&(BT._package[dl_pos[1]+1])));
-			distance = atoi(a1);
-			order	 = atoi(a3);
+			distance 		= atoi(a1);
+			lenght_to_wall  = atoi(a2);
+			order	 		= atoi(a3);
 			if(distance > 1 && distance < 9999) {
-				//startForward(distance);
+				startForward(distance, lenght_to_wall, order);
 				BT._current_order = a3;
 				//acknowledge_order(a3);
 			} else {
@@ -238,11 +243,23 @@ void parse_C_command(void) {
 			}
 
 			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
-			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
-			x_ing = atoi(a1);
-			order = atoi(a2);
+			memcpy(a3, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
+			//x_ing = atoi(a1);
+			order = atoi(a3);
 
-
+			if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
+				x_ing = 2;
+			} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
+				x_ing = 4;
+			} else if (strncmp(&(BT._package[4]), "left", 4) == 0) {
+				x_ing = 3;
+			} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
+				x_ing = 1;
+			} else {
+				acknowledge_order(0);
+			}
+			startCrossing(x_ing, order);
+			BT._current_order = a3;
 		}
 	}
 }
