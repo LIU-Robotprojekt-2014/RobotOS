@@ -131,6 +131,7 @@ void init_platform(void) {
 	MP._right_side._backward_pin 	= GPIO_Pin_12;
 	istop=0;
 	orderComplete=0;
+	timer=0;
 
 	uint16_t pulse_width = 0;
 	/* TIM Configuration */
@@ -142,9 +143,21 @@ void init_platform(void) {
 	//PC7 kanal 2
 	//PC8 kanal 3
 	//PC9 kanal 4
+	TimerSetup();
+
+}
+
+void init_PID(void){
+	targetRange=20;
+	dt=0.1;
+	integral=0;
+	Kp=5;
+	Ki=0;
+	Kd=0;
 }
 
 void doPID(void){
+
 	error = targetRange-HFsensor;
 	integral = integral + error*dt;
 	derivative = (error-previous_error)/dt;
@@ -157,6 +170,7 @@ void doPID(void){
 		MP._Lspeed = MP._Lspeed - PIDoutput;
 	}
 	previous_error=error;
+	_go_forward();
 }
 
 void process_platform() {
@@ -352,4 +366,42 @@ void InitializeLEDs()
     GPIO_Init(GPIOD, &gpioStructure);
 
     GPIO_WriteBit(GPIOD, GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
+}
+
+void TimerSetup(void)
+{
+NVIC_InitTypeDef NVIC_InitStructure;
+/* Enable the TIM2 gloabal Interrupt */
+NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
+NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+NVIC_Init(&NVIC_InitStructure);
+
+/* TIM2 clock enable */
+RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+/* Time base configuration */
+TIM_TimeBaseStructure.TIM_Period = 100; // 1 MHz down to 1 KHz (1 ms)
+TIM_TimeBaseStructure.TIM_Prescaler = 78 ; // 24 MHz Clock down to 1 MHz (adjust per your clock)
+TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+/* TIM IT enable */
+TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+/* TIM2 enable counter */
+TIM_Cmd(TIM2, ENABLE);
+}
+
+void TIM2_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
+	{
+		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+		//GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
+		timer++;
+		if(timer==100){
+			doPID();
+			timer=0;
+		}
+	}
 }

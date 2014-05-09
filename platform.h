@@ -22,11 +22,14 @@ typedef struct MotorPlatform {
 
 int orderComplete;
 int orderNr;
+int timer;
 
 void TIM_Config(void);
 void PWM_Config(int period);
 void PWM_SetDC(uint16_t channel,uint16_t dutycycle);
 void init_platform(void);
+void init_PID(void);
+void doPID(void);
 void process_platform();
 int set_forward(int ls, int rs);
 int set_backward(int ls, int rs);
