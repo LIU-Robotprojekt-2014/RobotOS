@@ -10,6 +10,7 @@
 #include "platform.h"
 #include "sensors.h"
 #include "bluetooth.h"
+#include "PID.h"
 
 
 int main(void) {
@@ -18,10 +19,14 @@ int main(void) {
 	InitializeLEDs();
 	init_rotary();
 	init_bluetooth();
-	setLeftCalSpeed(0.945);
+	init_PID();
+	//setLeftCalSpeed(0.945);
+
+	startForward(5000,10,1);
 	while(1) {
 		process_sensors();
 		process_platform();
+		process_PID();
 		process_bluetooth();
 	}
 }

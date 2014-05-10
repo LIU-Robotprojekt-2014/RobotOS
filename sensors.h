@@ -3,6 +3,9 @@
 
 #define IR_SENSORS 4
 
+#define IR_SENSOR_LOWER_LIMIT 9
+#define IR_SENSOR_UPPER_LIMIT 50
+
 typedef struct Infrared {
 	float _latest_reading;
 	float _calibration;
@@ -36,6 +39,7 @@ float HFsensor;
 float HBsensor;
 float wall;
 
+#ifdef OLD_PID
 //PID
 float Kp;
 float Ki;
@@ -47,5 +51,6 @@ float derivative;
 float PIDoutput;
 float previous_error;
 float dt;
+#endif
 
 #endif

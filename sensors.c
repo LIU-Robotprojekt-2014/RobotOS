@@ -16,7 +16,7 @@
 
 Sensors S;
 volatile uint16_t ADCConvertedValue[4];
-		float range[4];
+float range[4];
 
 void init_sensors2(void) {
 	 GPIO_InitTypeDef      GPIO_InitStructure;
@@ -43,7 +43,7 @@ void init_sensors2(void) {
 	  /* Analog channel configuration : PC.01, 02*/
 	  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
 	  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
-	  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
 	  GPIO_Init(GPIOC, &GPIO_InitStructure);
 
 	  /**
@@ -163,23 +163,49 @@ void init_rotary(void){
 	 //Attach_GPIO_Interrupt(EXTI_PortSourceGPIOB, EXTI_PinSource1, EXTI_Line1 ,EXTI_Trigger_Rising_Falling,1 );
 
 
-
-
-
 }
+//#define SENS_TEST
+#ifdef SENS_TEST
+uint16_t sensor_i = 0;
+float sensor_array_test[2000] = {0};
+float sensor_mean = 0;
+#endif
 
 void process_sensors(void) {
 
 	int i;
 	float derp;
-	for(i=0; i<4; i++){
-		range[i]=0;
-		derp=ADCConvertedValue[i];
-		//range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
-		range[i] = 17.77*pow(derp*3/4096, (double)(-0.9524+ 0.1258)) ;
+	if(ADCConvertedValue[3] != 0xFF) {
+
+#ifdef SENS_TEST
+		sensor_array_test[sensor_i++] = ADCConvertedValue[3];
+		if(sensor_i >= 2000) {
+			sensor_mean = sensor_array_test[0];
+			for(sensor_i = 1; i < 2000; i++) {
+				sensor_mean += sensor_array_test[sensor_i];
+				sensor_mean /= 2;
+			}
+			sensor_i = 0;
+		}
+#endif
+		for(i=0; i<4; i++){
+			range[i]=0;
+			derp=ADCConvertedValue[i];
+			//range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
+			//range[i] = 17.77*pow(derp*3/4096, (double)(-0.9524+ 0.1258));
+			range[i] = 195400*pow(derp, (double)(-1.243));
+
+			if(range[i] > IR_SENSOR_UPPER_LIMIT) {
+				range[i] = IR_SENSOR_UPPER_LIMIT;
+			} else if(range[i] < IR_SENSOR_LOWER_LIMIT) {
+				range[i] = IR_SENSOR_LOWER_LIMIT;
+			}
+
+			ADCConvertedValue[i] = 0xFF;
+		}
+		HFsensor=range[3];
+		HBsensor=range[1];
 	}
-	HFsensor=range[3];
-	HBsensor=range[1];
 }
 
 void EXTI1_IRQHandler(void) //EXTI1 ISR

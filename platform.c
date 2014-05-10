@@ -114,26 +114,30 @@ void PWM_SetDC(uint16_t channel,uint16_t dutycycle)
     }
 }
 
+
 void init_platform(void) {
 	MP._Lspeed = 100;
 	MP._Rspeed = 100;
 	MP._state = 0;
 	MP._flags = 0;
 
-	MP._left_side._calibrate_speed 	= 1;
-	MP._left_side._state 			= 0;
+
 	MP._left_side._forward_pin 		= GPIO_Pin_11;
 	MP._left_side._backward_pin 	= GPIO_Pin_9;
+	MP._left_side._calibrate_speed 	= 0.945;
+	MP._left_side._state 			= 0;
 
-	MP._right_side._calibrate_speed = 1;
-	MP._right_side._state 			= 0;
 	MP._right_side._forward_pin 	= GPIO_Pin_10;
 	MP._right_side._backward_pin 	= GPIO_Pin_12;
+	MP._right_side._calibrate_speed = 1;
+	MP._right_side._state 			= 0;
+
+
 	istop=0;
 	orderComplete=0;
 	timer=0;
 
-	uint16_t pulse_width = 0;
+	//uint16_t pulse_width = 0;
 	/* TIM Configuration */
 	TIM_Config();
 	/* PWM Configuration */
@@ -143,10 +147,10 @@ void init_platform(void) {
 	//PC7 kanal 2
 	//PC8 kanal 3
 	//PC9 kanal 4
-	TimerSetup();
+	//TimerSetup();
 
 }
-
+/*
 void init_PID(void){
 	targetRange=20;
 	dt=0.1;
@@ -172,7 +176,7 @@ void doPID(void){
 	previous_error=error;
 	_go_forward();
 }
-
+*/
 void process_platform() {
 
 	if(i>=istop){
@@ -284,8 +288,8 @@ int set_stop() {
 
 void _go_forward(void) {
 	_stop();
-	PWM_SetDC(2,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(3,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(1,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(4,40*MP._Rspeed*MP._right_side._calibrate_speed);
 }
 
 void _go_backward(void) {
@@ -322,7 +326,10 @@ void startForward(int distance, int distanceToWall, int ordNr){
 	// 1cm = 3000/2700 i = 1.111111111 = 10/9
 	i=0;
 	istop=distance*10/9;
-	targetRange=distanceToWall;
+
+	//TODO: ADD TO NEW PID
+	//targetRange=distanceToWall;
+
 	set_forward(100,100);
 	orderNr=ordNr;
 }
@@ -351,6 +358,15 @@ void setRightCalSpeed( float c){
 	MP._right_side._calibrate_speed = c;
 }
 
+void platformPID(float left, float right) {
+	MP._Lspeed = MP._originalLspeed + left;
+	MP._Rspeed = MP._originalLspeed + right;
+}
+
+void setChange(int value) {
+	change = value;
+}
+
 int isComplete(void){
 	return orderComplete;
 }
@@ -367,7 +383,7 @@ void InitializeLEDs()
 
     GPIO_WriteBit(GPIOD, GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
 }
-
+#ifdef OLD_TIMER
 void TimerSetup(void)
 {
 NVIC_InitTypeDef NVIC_InitStructure;
@@ -405,3 +421,4 @@ void TIM2_IRQHandler(void)
 		}
 	}
 }
+#endif

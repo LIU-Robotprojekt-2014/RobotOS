@@ -28,14 +28,15 @@ void TIM_Config(void);
 void PWM_Config(int period);
 void PWM_SetDC(uint16_t channel,uint16_t dutycycle);
 void init_platform(void);
-void init_PID(void);
-void doPID(void);
+//void init_PID(void);
+//void doPID(void);
 void process_platform();
 int set_forward(int ls, int rs);
 int set_backward(int ls, int rs);
 int set_left(int ls, int rs);
 int set_right(int ls, int rs);
 int set_stop();
+
 void _go_forward(void);
 void _go_backward(void);
 void _turn_left(void);
@@ -47,6 +48,10 @@ void startCrossing(int direction, int ordNr);
 void startForward(int distance, int distanceToWall, int ordNr);
 void setLeftCalSpeed( float c);
 void setRightCalSpeed( float c);
+
+void platformPID(float left, float right);
+void setChange(int value);
+
 int isComplete(void);
 void InitializeLEDs();
 

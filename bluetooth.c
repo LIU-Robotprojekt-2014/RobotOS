@@ -223,7 +223,7 @@ void parse_C_command(void) {
 			order	 		= atoi(a3);
 			if(distance > 1 && distance < 9999) {
 				startForward(distance, lenght_to_wall, order);
-				BT._current_order = a3;
+				BT._current_order = (uint16_t)a3;
 				//acknowledge_order(a3);
 			} else {
 				//ERROR
@@ -259,7 +259,7 @@ void parse_C_command(void) {
 				acknowledge_order(0);
 			}
 			startCrossing(x_ing, order);
-			BT._current_order = a3;
+			BT._current_order = (uint16_t)a3;
 		}
 	}
 }
