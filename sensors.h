@@ -3,7 +3,7 @@
 
 #define IR_SENSORS 4
 
-#define IR_SENSOR_LOWER_LIMIT 9
+#define IR_SENSOR_LOWER_LIMIT 8
 #define IR_SENSOR_UPPER_LIMIT 50
 
 typedef struct Infrared {

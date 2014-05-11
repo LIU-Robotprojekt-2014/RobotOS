@@ -20,9 +20,9 @@ int main(void) {
 	init_rotary();
 	init_bluetooth();
 	init_PID();
-	//setLeftCalSpeed(0.945);
+	setLeftCalSpeed(0.945);
 
-	startForward(5000,10,1);
+	startForward(10000,20,1);
 	while(1) {
 		process_sensors();
 		process_platform();

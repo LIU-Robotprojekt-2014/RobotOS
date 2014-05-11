@@ -14,11 +14,11 @@ PID PID_Motor;
 
 void init_PID(void) {
 	PID_Motor._input			= 0;
-	PID_Motor._value 			= 30;
+	PID_Motor._value 			= 20;
 	PID_Motor._interval 		= 100;
-	PID_Motor._Kp 				= 3;
-	PID_Motor._Ki 				= 0.05;
-	PID_Motor._Kd 				= 0.5;
+	PID_Motor._Kp 				= 10;
+	PID_Motor._Ki 				= 0.1;
+	PID_Motor._Kd 				= 0.1;
 	PID_Motor._error 			= 0;
 	PID_Motor._previous_error 	= 0;
 	PID_Motor._proportional	 	= 0;
@@ -78,7 +78,7 @@ void setupTimer(float interval) {
 	TIM_Cmd(TIM2, ENABLE);
 }
 
-void setValue(float val) {
+void setPIDValue(float val) {
 	if(val >= WALL_DISTANCE_MINIMUM && val <= WALL_DISTANCE_MAXIMUM) {
 		PID_Motor._value = val;
 	} else {
@@ -148,9 +148,14 @@ void TIM2_IRQHandler(void) {
 		PID_Motor._timer_count++;
 
 		//Take sample every 10ms
+		/*
 		if(PID_Motor._timer_count%10 == 0) {
 			PID_Motor._state |= PID_TAKE_SAMPLE;
 		}
+		*/
+
+		//Take sample every ms
+		PID_Motor._state |= PID_TAKE_SAMPLE;
 
 		if(PID_Motor._timer_count >= PID_Motor._interval) {
 			PID_Motor._state |= PID_TIMER_DONE;

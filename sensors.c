@@ -43,7 +43,7 @@ void init_sensors2(void) {
 	  /* Analog channel configuration : PC.01, 02*/
 	  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
 	  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
-	  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
+	  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	  GPIO_Init(GPIOC, &GPIO_InitStructure);
 
 	  /**
@@ -193,7 +193,11 @@ void process_sensors(void) {
 			derp=ADCConvertedValue[i];
 			//range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
 			//range[i] = 17.77*pow(derp*3/4096, (double)(-0.9524+ 0.1258));
-			range[i] = 195400*pow(derp, (double)(-1.243));
+
+			//range[i] = 195400*pow(derp, (double)(-1.243));
+
+			//range[i] = (10250*pow(derp, (double)(-0.7659)))-12.84;
+			range[i] = (5834*pow(derp, (double)(-0.697)))-11.98;
 
 			if(range[i] > IR_SENSOR_UPPER_LIMIT) {
 				range[i] = IR_SENSOR_UPPER_LIMIT;

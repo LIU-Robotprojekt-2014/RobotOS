@@ -1,6 +1,8 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
+#define MOTOR_DEFAULT_SPEED 75
+
 typedef struct Motor {
 	float _calibrate_speed;
 	uint8_t _state; //Private
@@ -45,7 +47,7 @@ void _stop(void);
 void startLeft();
 void startRight();
 void startCrossing(int direction, int ordNr);
-void startForward(int distance, int distanceToWall, int ordNr);
+void startForward(int distance, float distanceToWall, int ordNr);
 void setLeftCalSpeed( float c);
 void setRightCalSpeed( float c);
 

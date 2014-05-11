@@ -7,6 +7,7 @@
 #include "sensors.h"
 #include <stm32f4xx_tim.h>
 #include <stdio.h>
+#include "PID.h"
 
 
 MotorPlatform MP;
@@ -321,16 +322,13 @@ void _stop(void) {
 
 }
 
-void startForward(int distance, int distanceToWall, int ordNr){
+void startForward(int distance, float distanceToWall, int ordNr){
 	// 3000i = 2700cm
 	// 1cm = 3000/2700 i = 1.111111111 = 10/9
 	i=0;
 	istop=distance*10/9;
-
-	//TODO: ADD TO NEW PID
-	//targetRange=distanceToWall;
-
-	set_forward(100,100);
+	setPIDValue(distanceToWall);
+	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 	orderNr=ordNr;
 }
 
