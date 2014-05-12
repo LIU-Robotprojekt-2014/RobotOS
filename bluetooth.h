@@ -46,6 +46,8 @@ void parse_package(void);
 void parse_M_command(void);
 void parse_C_command(void);
 void acknowledge_order(char* order);
+uint8_t send_ir_sensors(char* s1, char* s2, char* s3, char* s4);
+uint8_t send_rotary(char* msg);
 int8_t _send_package(char* arr, uint8_t lenght);
 void _clean_buffer(void);
 void _clean_package(void);

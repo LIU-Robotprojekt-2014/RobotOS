@@ -2,35 +2,69 @@
 #define SENSORS_H
 
 #define IR_SENSORS 4
+#define IR_SENSOR_LF 2
+#define IR_SENSOR_LB 0
+#define IR_SENSOR_RF 3
+#define IR_SENSOR_RB 1
 
 #define IR_SENSOR_LOWER_LIMIT 8
 #define IR_SENSOR_UPPER_LIMIT 50
 
+#define IR_SENSOR_OFFSET 10
+
+#define IR_SENSOR_WALL_RIGHT_LIMIT 20 //Below value: got wall. Above value: no wall
+#define IR_SENSOR_WALL_LEFT_LIMIT 40  //Below value: got wall. Above value: no wall
+#define IR_SENSOR_GOT_WALL_RF 0x01 //Right front
+#define IR_SENSOR_GOT_WALL_RB 0x02 //Right back
+#define IR_SENSOR_GOT_WALL_LF 0x04 //Left front
+#define IR_SENSOR_GOT_WALL_LB 0x08 //Left back
+#define IR_SENSOR_SEND 0x10
+
+
+
+#define IR_SENSOR_STATE_GOT_WALL 0x01
+
+#define ROTARY_SEND 0x01
+#define ROTARY_CLEAR 0x02
+
+
+
 typedef struct Infrared {
 	float _latest_reading;
 	float _calibration;
+	uint8_t state;
 } Infrared;
 
 typedef struct Rotary {
 	double _accumulated_distance;
 	double _total_accumulated_distance;
 	float _calibration;
+	uint8_t state;
+	uint32_t tick;
+	char _message_buffer[60];
 } Rotary;
 
 
 typedef struct Sensors {
 	Infrared IR[IR_SENSORS];
 	Rotary ROT;
+	uint8_t ir_state;
 } Sensors;
 
 
-
-
 void init_sensors(void);
-void init_sensors2(void);
 void init_rotary(void);
+void setupIR(void);
+void setupRotary(void);
 void process_sensors(void);
 void getVal(uint32_t arr[]);
+void checkWallDistance(void);
+char* toArray(int number);
+char* revStr(char *str);
+
+void sendIRSensors(void);
+void sendRotaryTick(void);
+
 void EXTI0_IRQHandler(void);
 uint32_t i;
 uint32_t itot;
@@ -38,19 +72,4 @@ float istop;
 float HFsensor;
 float HBsensor;
 float wall;
-
-#ifdef OLD_PID
-//PID
-float Kp;
-float Ki;
-float Kd;
-float targetRange;
-float error;
-float integral;
-float derivative;
-float PIDoutput;
-float previous_error;
-float dt;
-#endif
-
 #endif

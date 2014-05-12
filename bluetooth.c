@@ -27,7 +27,7 @@ void init_bluetooth(void) {
 	_clean_buffer();
 
 	BT._last_order 		= 0;
-	BT._current_order 	= 0;
+	BT._current_order 	= 999; //TODO: Change to 0
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
@@ -99,20 +99,26 @@ void USART3_IRQHandler(void) {
   if(USART_GetITStatus(USART3, USART_IT_TXE) != RESET) {
 
       /* Write one byte to the transmit data register */
-	  if(BT._send_buffer[BT._tx_counter] != 0x00) {
+	  if(BT._tx_counter < BLUETOOTH_BUFFER_SIZE) {
+		  if(BT._send_buffer[BT._tx_counter] == BT_EOL) {
+			  BT._tx_flags |= BT_TX_DONE;
+		  }
 		  USART_SendData(USART3, BT._send_buffer[BT._tx_counter++]);
 	  } else {
-		  USART_ITConfig(USART3, USART_IT_TXE, DISABLE);
 		  BT._tx_flags |= BT_TX_DONE;
 	  }
 
+	  //If number chars to send is done
       if(BT._tx_counter >= BT._chars_to_send) {
-    	  /* Disable the USART3 Transmit interrupt */
-    	  USART_ITConfig(USART3, USART_IT_TXE, DISABLE);
     	  BT._tx_flags |= BT_TX_DONE;
       }
-    }
 
+      //If done, disable TX interrupt
+      if(BT._tx_flags&BT_TX_DONE) {
+    	  /* Disable the USART3 Transmit interrupt */
+    	  USART_ITConfig(USART3, USART_IT_TXE, DISABLE);
+      }
+    }
 }
 
 void process_bluetooth(void) {
@@ -278,6 +284,49 @@ void acknowledge_order(char* order) {
 	BT._current_order = 0;
 	_send_package(new_str, strlen(new_str));
 	free(new_str);
+}
+uint8_t send_ir_sensors(char* s1, char* s2, char* s3, char* s4) {
+	char str1[] = {"S02|"};
+	char delim[] = {":"};
+	char str3[] = {"\n"};
+	char * new_str ;
+	if((new_str = malloc(strlen(str1)+strlen(s1)+strlen(delim)+strlen(s2)+strlen(delim)+strlen(s3)+strlen(delim)+strlen(s4)+strlen(str3)+1)) != NULL){
+		new_str[0] = '\0';   // ensures the memory is an empty string
+		strcat(new_str,str1);
+		strcat(new_str,s1);
+		strcat(new_str,delim);
+		strcat(new_str,s2);
+		strcat(new_str,delim);
+		strcat(new_str,s3);
+		strcat(new_str,delim);
+		strcat(new_str,s4);
+		strcat(new_str,str3);
+	}
+	if(_send_package(new_str, strlen(new_str)) != BT_TX_BUSY) {
+		free(new_str);
+		return 0;
+	}
+	free(new_str);
+	return BT_TX_BUSY;
+}
+
+uint8_t send_rotary(char* msg) {
+	char str1[] = {"S01|"};
+	char str3[] = {"\n"};
+	char * new_str ;
+	if((new_str = malloc(strlen(str1)+strlen(msg)+strlen(str3)+1)) != NULL){
+		new_str[0] = '\0';   // ensures the memory is an empty string
+		strcat(new_str,str1);
+		strcat(new_str,msg);
+		strcat(new_str,str3);
+	}
+	if(_send_package(new_str, strlen(new_str)) != BT_TX_BUSY) {
+		free(new_str);
+		return 0;
+	}
+	free(new_str);
+	return BT_TX_BUSY;
+
 }
 
 int8_t _send_package(char* arr, uint8_t lenght) {

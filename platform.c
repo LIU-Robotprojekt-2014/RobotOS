@@ -144,67 +144,14 @@ void init_platform(void) {
 	/* PWM Configuration */
 	PWM_Config(4000);
 
-	//PC6 kanal 1
-	//PC7 kanal 2
-	//PC8 kanal 3
-	//PC9 kanal 4
-	//TimerSetup();
-
-}
-/*
-void init_PID(void){
-	targetRange=20;
-	dt=0.1;
-	integral=0;
-	Kp=5;
-	Ki=0;
-	Kd=0;
 }
 
-void doPID(void){
-
-	error = targetRange-HFsensor;
-	integral = integral + error*dt;
-	derivative = (error-previous_error)/dt;
-	PIDoutput=Kp*error + Ki*integral + Kd*derivative;
-
-	if(error>0){
-		MP._Rspeed = MP._Rspeed - PIDoutput;
-	}
-	if(error<0){
-		MP._Lspeed = MP._Lspeed - PIDoutput;
-	}
-	previous_error=error;
-	_go_forward();
-}
-*/
 void process_platform() {
 
 	if(i>=istop){
 		set_stop();
 		orderComplete=orderNr;
 	}
-
-	//Följ vägg
-	/*
-	if(MP._state==1){
-
-		if(HFsensor>wall+1 && HBsensor>wall+1){
-			MP._Rspeed = MP._originalRspeed * 0.8;
-		}
-		else if(HFsensor<wall+1 && HBsensor<wall+1){
-			MP._Lspeed = MP._originalLspeed * 0.8;
-		}
-
-		else if(HFsensor>HBsensor){
-			MP._Rspeed = MP._originalRspeed * pow((HBsensor/HFsensor),3);
-		}
-		else if(HBsensor>HFsensor){
-			MP._Lspeed = MP._originalLspeed * pow((HFsensor/HBsensor),3);
-		}
-		_go_forward();
-	} */
-
 	if(change==1){
 		switch(MP._state){
 			case(0):
@@ -289,28 +236,28 @@ int set_stop() {
 
 void _go_forward(void) {
 	_stop();
-	PWM_SetDC(1,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(4,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
 }
 
 void _go_backward(void) {
 	_stop();
-	PWM_SetDC(4,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(1,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_BACKWARD,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_BACKWARD,40*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
 
 void _turn_left(void) {
 	_stop();
-	PWM_SetDC(4,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(3,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_BACKWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
 
 void _turn_right(void) {
 	_stop();
-	PWM_SetDC(2,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(1,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_BACKWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
 }
 
 
@@ -327,7 +274,7 @@ void startForward(int distance, float distanceToWall, int ordNr){
 	// 1cm = 3000/2700 i = 1.111111111 = 10/9
 	i=0;
 	istop=distance*10/9;
-	setPIDValue(distanceToWall);
+	setPIDValue(distanceToWall+IR_SENSOR_OFFSET);
 	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 	orderNr=ordNr;
 }
@@ -348,11 +295,11 @@ void startCrossing(int direction, int ordNr){
 
 }
 
-void setLeftCalSpeed( float c){
+void setLeftCalSpeed(float c) {
 	MP._left_side._calibrate_speed 	= c;
 }
 
-void setRightCalSpeed( float c){
+void setRightCalSpeed(float c) {
 	MP._right_side._calibrate_speed = c;
 }
 
@@ -381,42 +328,3 @@ void InitializeLEDs()
 
     GPIO_WriteBit(GPIOD, GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
 }
-#ifdef OLD_TIMER
-void TimerSetup(void)
-{
-NVIC_InitTypeDef NVIC_InitStructure;
-/* Enable the TIM2 gloabal Interrupt */
-NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
-NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
-NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-NVIC_Init(&NVIC_InitStructure);
-
-/* TIM2 clock enable */
-RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-/* Time base configuration */
-TIM_TimeBaseStructure.TIM_Period = 100; // 1 MHz down to 1 KHz (1 ms)
-TIM_TimeBaseStructure.TIM_Prescaler = 78 ; // 24 MHz Clock down to 1 MHz (adjust per your clock)
-TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
-/* TIM IT enable */
-TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-/* TIM2 enable counter */
-TIM_Cmd(TIM2, ENABLE);
-}
-
-void TIM2_IRQHandler(void)
-{
-	if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
-	{
-		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
-		//GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
-		timer++;
-		if(timer==100){
-			doPID();
-			timer=0;
-		}
-	}
-}
-#endif

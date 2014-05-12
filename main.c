@@ -14,15 +14,15 @@
 
 
 int main(void) {
-	init_platform();
-	init_sensors2();
 	InitializeLEDs();
-	init_rotary();
-	init_bluetooth();
+
+	init_sensors();
+	init_platform();
 	init_PID();
+	init_bluetooth();
 	setLeftCalSpeed(0.945);
 
-	startForward(10000,20,1);
+	startForward(10000,10,1);
 	while(1) {
 		process_sensors();
 		process_platform();

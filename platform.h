@@ -1,7 +1,19 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
-#define MOTOR_DEFAULT_SPEED 75
+#ifndef FLIP_MOTORS
+#define PLATFORM_LEFT_FORWARD 1
+#define PLATFORM_RIGHT_FORWARD 4
+#define PLATFORM_LEFT_BACKWARD 3
+#define PLATFORM_RIGHT_BACKWARD 2
+#else
+#define PLATFORM_LEFT_FORWARD 3
+#define PLATFORM_RIGHT_FORWARD 2
+#define PLATFORM_LEFT_BACKWARD 1
+#define PLATFORM_RIGHT_BACKWARD 4
+#endif
+
+#define MOTOR_DEFAULT_SPEED 80
 
 typedef struct Motor {
 	float _calibrate_speed;
