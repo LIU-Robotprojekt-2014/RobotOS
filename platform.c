@@ -133,6 +133,15 @@ void init_platform(void) {
 	MP._right_side._calibrate_speed = 1;
 	MP._right_side._state 			= 0;
 
+	MP._rotary_driver_state			= 0;
+	MP.rotary_driver_ticks			= 0;
+	MP.rotary_driver_target_ticks	= 0;
+
+	//Orders
+	MP.order_state 		= 0;
+	MP.current_order 	= 0;
+	MP.completed_order 	= 0;
+
 
 	istop=0;
 	orderComplete=0;
@@ -146,27 +155,57 @@ void init_platform(void) {
 
 }
 
+
+uint8_t speed_before_left = 0;
+uint8_t speed_before_right = 0;
 void process_platform() {
 
-	if(i>=istop){
-		set_stop();
-		orderComplete=orderNr;
+
+	if(MP._state&PLATFORM_LEFT || MP._state&PLATFORM_RIGHT) {
+		if(i>=istop){
+			set_stop();
+		}
 	}
+
+	if(!checkFrontRight()) {
+		deactivatePID();
+		speed_before_left = MP._Lspeed;
+		speed_before_right = MP._Rspeed;
+	}
+
+	if(i >= istop*0.8) {
+		if(!checkRightWall() && !MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE) {
+			rotaryDriverStart(80);
+		}
+
+		if(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE) {
+			if(!rotaryDriverActive()) {
+				set_stop();
+				orderComplete=orderNr;
+				rotaryDriverStop();
+
+			}
+		}
+	}
+
+
+
+
 	if(change==1){
 		switch(MP._state){
-			case(0):
+			case(PLATFORM_STOP):
 				_stop();
 				break;
-			case(1):
+			case(PLATFORM_FORWARD):
 				_go_forward();
 				break;
-			case(2):
+			case(PLATFORM_BACKWARD):
 				_go_backward();
 				break;
-			case(3):
+			case(PLATFORM_LEFT):
 				_turn_left();
 				break;
-			case(4):
+			case(PLATFORM_RIGHT):
 				_turn_right();
 				break;
 			default:
@@ -176,6 +215,8 @@ void process_platform() {
 		change=0;
 	}
 }
+
+
 
 int set_forward(int ls, int rs) {
 	change=1;
@@ -275,7 +316,9 @@ void startForward(int distance, float distanceToWall, int ordNr){
 	i=0;
 	istop=distance*10/9;
 	setPIDValue(distanceToWall+IR_SENSOR_OFFSET);
+	activePID();
 	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
+	activateRotary();
 	orderNr=ordNr;
 }
 
@@ -287,7 +330,7 @@ void startLeft(){
 
 void startRight(){
 	i=0;
-	istop=237;
+	istop=260;
 	set_right(100,100);
 }
 
@@ -312,8 +355,49 @@ void setChange(int value) {
 	change = value;
 }
 
+uint8_t getMotorState(void) {
+	return MP._state;
+}
+
 int isComplete(void){
 	return orderComplete;
+}
+
+
+void rotaryDriverStart(uint16_t ticks) {
+	rotaryDriverReset();
+	MP._rotary_driver_state |= ROTARY_DRIVER_ACTIVE;
+	MP.rotary_driver_target_ticks = ticks;
+	MP._Lspeed = speed_before_left;
+	MP._Rspeed = speed_before_right;
+	setChange(1);
+}
+
+uint8_t rotaryDriverActive(void) {
+	if(MP.rotary_driver_ticks >= MP.rotary_driver_target_ticks) {
+		return 0;
+	}
+	return 1;
+}
+
+void rotaryDriverStop(void) {
+	rotaryDriverCancel();
+}
+
+void rotaryDriverCancel(void) {
+	MP._rotary_driver_state &= ~(ROTARY_DRIVER_ACTIVE);
+}
+
+void rotaryDriverReset(void) {
+	MP._rotary_driver_state = 0;
+	MP.rotary_driver_ticks = 0;
+	MP.rotary_driver_target_ticks = 0;
+}
+
+void rotaryDriverTick(void) {
+	if(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE) {
+		MP.rotary_driver_ticks++;
+	}
 }
 
 void InitializeLEDs()

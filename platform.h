@@ -13,7 +13,18 @@
 #define PLATFORM_RIGHT_BACKWARD 4
 #endif
 
-#define MOTOR_DEFAULT_SPEED 80
+#define MOTOR_DEFAULT_SPEED 100
+
+#define PLATFORM_STOP 0
+#define PLATFORM_FORWARD 1
+#define PLATFORM_BACKWARD 2
+#define PLATFORM_LEFT 3
+#define PLATFORM_RIGHT 4
+
+#define ROTARY_DRIVER_ACTIVE 0x01
+
+#define ORDER_ACTIVE 0x01
+#define ORDER_DONE 0x02
 
 typedef struct Motor {
 	float _calibrate_speed;
@@ -31,6 +42,15 @@ typedef struct MotorPlatform {
    uint8_t _flags; //
    Motor _left_side;
    Motor _right_side;
+
+   uint8_t _rotary_driver_state;
+   uint16_t rotary_driver_ticks;
+   uint16_t rotary_driver_target_ticks;
+
+   uint8_t order_state;
+   uint16_t current_order; //Set to 0 when done
+   uint16_t completed_order;
+
 } MotorPlatform;
 
 
@@ -66,7 +86,17 @@ void setRightCalSpeed( float c);
 void platformPID(float left, float right);
 void setChange(int value);
 
+uint8_t getMotorState(void);
+
 int isComplete(void);
+
+void rotaryDriverStart(uint16_t ticks);
+uint8_t rotaryDriverActive(void);
+void rotaryDriverStop(void);
+void rotaryDriverCancel(void);
+void rotaryDriverReset(void);
+void rotaryDriverTick(void);
+
 void InitializeLEDs();
 
 #endif

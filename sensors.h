@@ -26,6 +26,7 @@
 
 #define ROTARY_SEND 0x01
 #define ROTARY_CLEAR 0x02
+#define ROTARY_ACTIVE 0x04
 
 
 
@@ -64,6 +65,14 @@ char* revStr(char *str);
 
 void sendIRSensors(void);
 void sendRotaryTick(void);
+
+void activateRotary(void);
+void deactivateRotarty(void);
+
+uint8_t checkFrontLeft(void);
+uint8_t checkFrontRight(void);
+uint8_t checkLeftWall(void);
+uint8_t checkRightWall(void);
 
 void EXTI0_IRQHandler(void);
 uint32_t i;

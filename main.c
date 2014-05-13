@@ -22,7 +22,7 @@ int main(void) {
 	init_bluetooth();
 	setLeftCalSpeed(0.945);
 
-	startForward(10000,10,1);
+	startForward(1000,10,1);
 	while(1) {
 		process_sensors();
 		process_platform();

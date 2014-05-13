@@ -42,5 +42,8 @@ void setPIDValue(float val);
 void addInputValue(float value);
 void resetInput(void);
 void calculatePID(void);
+void activePID(void);
+void deactivatePID(void);
+int16_t getPIDOutput(void);
 
 #endif

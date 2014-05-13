@@ -184,10 +184,10 @@ float sensor_mean = 0;
 void process_sensors(void) {
 
 	if(S.ROT.state&ROTARY_SEND) {
-		if(S.ROT.tick != 0) {
+		if(S.ROT.tick != 0.0) {
 			char* message = toArray(S.ROT.tick);
 			if(send_rotary(message) == 0) {
-				S.ROT.tick = 0;
+				//S.ROT.tick = 0;
 				S.ROT.state &= ~(ROTARY_SEND);
 			}
 			free(message);
@@ -241,7 +241,7 @@ void process_sensors(void) {
 			S.IR[i]._latest_reading = range[i];
 			ADCConvertedValue[i] = 0xFF;
 		}
-		HFsensor=range[3];
+		HFsensor=range[IR_SENSOR_RB];
 		HBsensor=range[1];
 		checkWallDistance();
 	}
@@ -270,6 +270,28 @@ void checkWallDistance(void) {
 	} else {
 		S.ir_state &= ~(IR_SENSOR_GOT_WALL_LB);
 	}
+}
+
+uint8_t checkFrontLeft(void) {
+	return S.ir_state&IR_SENSOR_GOT_WALL_LF;
+}
+
+uint8_t checkFrontRight(void) {
+	return S.ir_state&IR_SENSOR_GOT_WALL_RF;
+}
+
+
+uint8_t checkLeftWall(void) {
+	if((S.ir_state&IR_SENSOR_GOT_WALL_LF)||(S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
+		return 1;
+	}
+	return 0;
+}
+uint8_t checkRightWall(void) {
+	if((S.ir_state&IR_SENSOR_GOT_WALL_RF)||(S.ir_state&IR_SENSOR_GOT_WALL_RB)) {
+		return 1;
+	}
+	return 0;
 }
 
 char* toArray(int number) {
@@ -306,7 +328,18 @@ void sendIRSensors(void) {
 }
 
 void sendRotaryTick(void) {
-	S.ROT.state |= ROTARY_SEND;
+	if(S.ROT.state&ROTARY_ACTIVE) {
+		S.ROT.state |= ROTARY_SEND;
+	}
+}
+
+void activateRotary(void) {
+	S.ROT.state |= ROTARY_ACTIVE;
+	S.ROT.tick = 0;
+}
+void deactivateRotarty(void) {
+	S.ROT.state &= ~(ROTARY_ACTIVE);
+	S.ROT.tick = 0;
 }
 
 //EXTI1 ISR
@@ -320,6 +353,10 @@ void EXTI1_IRQHandler(void) {
 		//For speed
 		S.ROT.tick++;
 
-		GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+
+		rotaryDriverTick();
+
+
+		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 	}
 }

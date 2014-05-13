@@ -16,9 +16,9 @@ void init_PID(void) {
 	PID_Motor._input			= 0;
 	PID_Motor._value 			= 20;
 	PID_Motor._interval 		= 100;
-	PID_Motor._Kp 				= 10;
-	PID_Motor._Ki 				= 0.1;
-	PID_Motor._Kd 				= 0.1;
+	PID_Motor._Kp 				= 5;
+	PID_Motor._Ki 				= 1;
+	PID_Motor._Kd 				= 15;
 	PID_Motor._error 			= 0;
 	PID_Motor._previous_error 	= 0;
 	PID_Motor._proportional	 	= 0;
@@ -28,12 +28,18 @@ void init_PID(void) {
 	PID_Motor._timer_count 		= 0;
 	PID_Motor.output			= 0;
 	setupTimer(PID_Motor._interval);
-
-	PID_Motor._state |= PID_ACTIVE;
 }
 
 
 void process_PID(void) {
+	/*
+	if(!getMotorState()&PLATFORM_FORWARD) {
+		PID_Motor._state &= ~(PID_ACTIVE);
+	} else {
+		PID_Motor._state |= PID_ACTIVE;
+	}
+	*/
+
 	if(PID_Motor._state&PID_ACTIVE) {
 		if(PID_Motor._state&PID_TAKE_SAMPLE) {
 			PID_Motor._state &= ~(PID_TAKE_SAMPLE);
@@ -90,17 +96,15 @@ void setPIDValue(float val) {
 	}
 }
 
+int ab = 0;
 void addInputValue(float value) {
-	if(PID_Motor._input != 0.0) {
-		PID_Motor._input += value;
-		PID_Motor._input /= 2;
-	} else {
-		PID_Motor._input = value;
-	}
+	PID_Motor._input += value/10;
+	ab++;
 }
 
 void resetInput(void) {
 	PID_Motor._input = 0;
+	ab = 0;
 }
 
 void calculatePID(void) {
@@ -152,10 +156,20 @@ void calculatePID(void) {
 	PID_Motor._previous_error = PID_Motor._error;
 }
 
+void activePID(void) {
+	PID_Motor._state |= PID_ACTIVE;
+}
+void deactivatePID(void) {
+	PID_Motor._state &= ~(PID_ACTIVE);
+}
+
+int16_t getPIDOutput(void) {
+	return PID_Motor.output;
+}
 
 //TODO: Temp for rotary timer
 uint32_t rot_ms = 0;
-#define ROT_MS 2000
+#define ROT_MS 1000
 
 uint32_t ir_ms = 0;
 #define IR_MS 1500
@@ -179,19 +193,19 @@ void TIM2_IRQHandler(void) {
 
 		ir_ms++;
 		if(ir_ms >= IR_MS) {
-			sendIRSensors();
+			//sendIRSensors();
 			ir_ms = 0;
 		}
 
 		//Take sample every 10ms
-		/*
+
 		if(PID_Motor._timer_count%10 == 0) {
 			PID_Motor._state |= PID_TAKE_SAMPLE;
 		}
-		*/
+
 
 		//Take sample every ms
-		PID_Motor._state |= PID_TAKE_SAMPLE;
+		//PID_Motor._state |= PID_TAKE_SAMPLE;
 
 		if(PID_Motor._timer_count >= PID_Motor._interval) {
 			PID_Motor._state |= PID_TIMER_DONE;
