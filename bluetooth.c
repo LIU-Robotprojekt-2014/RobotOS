@@ -286,7 +286,7 @@ void acknowledge_order(char* order) {
 	free(new_str);
 }
 uint8_t send_ir_sensors(char* s1, char* s2, char* s3, char* s4) {
-	char str1[] = {"S02|"};
+	char str1[] = {"S01|"};
 	char delim[] = {":"};
 	char str3[] = {"\n"};
 	char * new_str ;
@@ -311,7 +311,7 @@ uint8_t send_ir_sensors(char* s1, char* s2, char* s3, char* s4) {
 }
 
 uint8_t send_rotary(char* msg) {
-	char str1[] = {"S01|"};
+	char str1[] = {"S02|"};
 	char str3[] = {"\n"};
 	char * new_str ;
 	if((new_str = malloc(strlen(str1)+strlen(msg)+strlen(str3)+1)) != NULL){
