@@ -14,6 +14,9 @@
 #endif
 
 #define MOTOR_DEFAULT_SPEED 100
+#define MOTOR_DEFAULT_TURN_SPEED 100
+#define MOTOR_LEFT_TICKS 248
+#define MOTOR_RIGHT_TICKS 280
 
 #define PLATFORM_STOP 0
 #define PLATFORM_FORWARD 1
@@ -22,9 +25,6 @@
 #define PLATFORM_RIGHT 4
 
 #define ROTARY_DRIVER_ACTIVE 0x01
-
-#define ORDER_ACTIVE 0x01
-#define ORDER_DONE 0x02
 
 typedef struct Motor {
 	float _calibrate_speed;
@@ -76,9 +76,13 @@ void _go_backward(void);
 void _turn_left(void);
 void _turn_right(void);
 void _stop(void);
+
+void orderStartForward(void);
+void orderStartLeftTurn(void);
+void orderStartRightTurn(void);
+
 void startLeft();
 void startRight();
-void startCrossing(int direction, int ordNr);
 void startForward(int distance, float distanceToWall, int ordNr);
 void setLeftCalSpeed( float c);
 void setRightCalSpeed( float c);

@@ -10,6 +10,8 @@
 #include "stm32f4_discovery.h"
 #include "bluetooth.h"
 #include "platform.h"
+#include "order.h"
+#include "sensors.h"
 
 Bluetoothunit BT;
 
@@ -122,8 +124,10 @@ void USART3_IRQHandler(void) {
 }
 
 void process_bluetooth(void) {
-	if(isComplete() == BT._current_order) {
-		acknowledge_order(BT._current_order);
+
+	if(checkOrderDone()) {
+		acknowledge_order(toArray(getOrderID()));
+		resetOrder();
 	}
 
 	if((BT._flags&BT_SOL_FLAG) && (BT._flags&BT_EOL_FLAG)) {
@@ -228,9 +232,15 @@ void parse_C_command(void) {
 			lenght_to_wall  = atoi(a2);
 			order	 		= atoi(a3);
 			if(distance > 1 && distance < 9999) {
-				startForward(distance, lenght_to_wall, order);
-				BT._current_order = (uint16_t)a3;
+				//startForward(distance, lenght_to_wall, order);
+				//BT._current_order = (uint16_t)a3;
 				//acknowledge_order(a3);
+				resetOrder();
+				setOrderTargetTicks(distance*(10/9));
+				setOrderLengthToWall(lenght_to_wall);
+				setOrderTypeForward();
+				setOrderID(order);
+
 			} else {
 				//ERROR
 				acknowledge_order(0);
@@ -264,8 +274,34 @@ void parse_C_command(void) {
 			} else {
 				acknowledge_order(0);
 			}
-			startCrossing(x_ing, order);
+			//startCrossing(x_ing, order);
 			BT._current_order = (uint16_t)a3;
+		} else if (BT._package[2] == '3') {
+			for(i = 4; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[0] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[0] == 0) {
+				return;
+			}
+
+			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
+			memcpy(a3, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
+			order = atoi(a3);
+			resetOrder();
+
+			if(strncmp(&(BT._package[4]), "left", 4) == 0) {
+				setOrderTypeLeftTurn();
+			} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
+				setOrderTypeRightTurn();
+			} else {
+				acknowledge_order(0);
+			}
+			setOrderID(order);
 		}
 	}
 }

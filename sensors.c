@@ -11,6 +11,7 @@
 #include "sensors.h"
 #include "platform.h"
 #include "bluetooth.h"
+#include "order.h"
 #include <stm32f4xx_exti.h>
 #include <stm32f4xx_syscfg.h>
 
@@ -355,6 +356,7 @@ void EXTI1_IRQHandler(void) {
 
 
 		rotaryDriverTick();
+		tickOrder();
 
 
 		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);

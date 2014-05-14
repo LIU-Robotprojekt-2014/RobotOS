@@ -8,6 +8,7 @@
 #include <stm32f4xx_tim.h>
 #include <stdio.h>
 #include "PID.h"
+#include "order.h"
 
 
 MotorPlatform MP;
@@ -41,14 +42,6 @@ void TIM_Config(void)
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-  /* GPIOB Configuration:  TIM3 CH3 (PB0) and TIM3 CH4 (PB1)
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
-  GPIO_Init(GPIOB, &GPIO_InitStructure); */
 
   /* Connect TIM3 pins to AF2 */
   GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM3);
@@ -95,26 +88,20 @@ void PWM_Config(int period)
   TIM_Cmd(TIM3, ENABLE);
 }
 
-void PWM_SetDC(uint16_t channel,uint16_t dutycycle)
-{
-  if (channel == 1)
-  {
-    TIM3->CCR1 = dutycycle;
+void PWM_SetDC(uint16_t channel,uint16_t dutycycle) {
+  if (channel == 1) {
+	  TIM3->CCR1 = dutycycle;
   }
-  else if (channel == 2)
-  {
-    TIM3->CCR2 = dutycycle;
+  else if (channel == 2) {
+	  TIM3->CCR2 = dutycycle;
   }
-  else if (channel == 3)
-  {
-    TIM3->CCR3 = dutycycle;
+  else if (channel == 3) {
+	  TIM3->CCR3 = dutycycle;
   }
-  else if (channel == 4)
-    {
-      TIM3->CCR4 = dutycycle;
-    }
+  else if (channel == 4) {
+	  TIM3->CCR4 = dutycycle;
+  }
 }
-
 
 void init_platform(void) {
 	MP._Lspeed = 100;
@@ -138,9 +125,7 @@ void init_platform(void) {
 	MP.rotary_driver_target_ticks	= 0;
 
 	//Orders
-	MP.order_state 		= 0;
-	MP.current_order 	= 0;
-	MP.completed_order 	= 0;
+	MP.completed_order = 0;
 
 
 	istop=0;
@@ -159,8 +144,7 @@ void init_platform(void) {
 uint8_t speed_before_left = 0;
 uint8_t speed_before_right = 0;
 void process_platform() {
-
-
+	/*
 	if(MP._state&PLATFORM_LEFT || MP._state&PLATFORM_RIGHT) {
 		if(i>=istop){
 			set_stop();
@@ -187,8 +171,36 @@ void process_platform() {
 			}
 		}
 	}
-
-
+	*/
+	if(getOrderID() != MP.completed_order) {
+		if(!(getOrderState()&ORDER_ACTIVE)) {
+			switch(getOrderType()) {
+				case(ORDER_TYPE_FORWARD):
+					orderStartForward();
+					break;
+				case(ORDER_TYPE_LEFT_TURN):
+					orderStartLeftTurn();
+					break;
+				case(ORDER_TYPE_RIGHT_TURN):
+					orderStartRightTurn();
+					break;
+			}
+		} else {
+			if(getOrderTargetTicks() <= 550) {
+				if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
+					set_stop();
+					MP.completed_order = getOrderID();
+					setOrderDone();
+				}
+			} else {
+				if(!checkRightWall()) {
+					set_stop();
+					MP.completed_order = getOrderID();
+					setOrderDone();
+				}
+			}
+		}
+	}
 
 
 	if(change==1){
@@ -322,20 +334,36 @@ void startForward(int distance, float distanceToWall, int ordNr){
 	orderNr=ordNr;
 }
 
+void orderStartForward(void) {
+	//setPIDValue(getOrderLengthToWall()+IR_SENSOR_OFFSET);
+	//activePID();
+	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
+	//activateRotary();
+	setOrderActive();
+}
+
+void orderStartLeftTurn(void) {
+	set_left(MOTOR_DEFAULT_TURN_SPEED,MOTOR_DEFAULT_TURN_SPEED);
+	setOrderTargetTicks(MOTOR_LEFT_TICKS);
+	setOrderActive();
+}
+
+void orderStartRightTurn(void) {
+	set_right(MOTOR_DEFAULT_TURN_SPEED,MOTOR_DEFAULT_TURN_SPEED);
+	setOrderTargetTicks(MOTOR_RIGHT_TICKS);
+	setOrderActive();
+}
+
 void startLeft(){
 	i=0;
 	istop=210;
-	set_left(100,100);
+	set_left(MOTOR_DEFAULT_SPEED,MOTOR_DEFAULT_SPEED);
 }
 
 void startRight(){
 	i=0;
 	istop=260;
-	set_right(100,100);
-}
-
-void startCrossing(int direction, int ordNr){
-
+	set_right(MOTOR_DEFAULT_SPEED,MOTOR_DEFAULT_SPEED);
 }
 
 void setLeftCalSpeed(float c) {
@@ -399,6 +427,8 @@ void rotaryDriverTick(void) {
 		MP.rotary_driver_ticks++;
 	}
 }
+
+
 
 void InitializeLEDs()
 {

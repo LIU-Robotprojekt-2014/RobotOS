@@ -6,6 +6,7 @@
 #include "platform.h"
 #include "PID.h"
 #include "sensors.h"
+#include "order.h"
 #include <stm32f4xx_tim.h>
 #include <stdio.h>
 #include <stm32f4xx_tim.h>
