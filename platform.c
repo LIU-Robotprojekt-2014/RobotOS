@@ -140,9 +140,6 @@ void init_platform(void) {
 
 }
 
-
-uint8_t speed_before_left = 0;
-uint8_t speed_before_right = 0;
 void process_platform() {
 	/*
 	if(MP._state&PLATFORM_LEFT || MP._state&PLATFORM_RIGHT) {
@@ -186,22 +183,31 @@ void process_platform() {
 					break;
 			}
 		} else {
-			if(getOrderTargetTicks() <= 550) {
-				if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
-					set_stop();
-					MP.completed_order = getOrderID();
-					setOrderDone();
+			if(!(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE)) {
+				if(getOrderTargetTicks() <= 300) {
+					if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
+						set_stop();
+						deactivatePID();
+						MP.completed_order = getOrderID();
+						setOrderDone();
+					}
+				} else {
+					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.4) {
+						if(!checkRightWall()) {
+							deactivatePID();
+							rotaryDriverStart(200);
+						}
+					}
 				}
 			} else {
-				if(!checkRightWall()) {
+				if(rotaryDriverDone()) {
 					set_stop();
-					MP.completed_order = getOrderID();
 					setOrderDone();
+					rotaryDriverStop();
 				}
 			}
+			}
 		}
-	}
-
 
 	if(change==1){
 		switch(MP._state){
@@ -335,8 +341,8 @@ void startForward(int distance, float distanceToWall, int ordNr){
 }
 
 void orderStartForward(void) {
-	//setPIDValue(getOrderLengthToWall()+IR_SENSOR_OFFSET);
-	//activePID();
+	setPIDValue(getOrderLengthToWall()+IR_SENSOR_OFFSET);
+	activePID();
 	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 	//activateRotary();
 	setOrderActive();
@@ -394,18 +400,17 @@ int isComplete(void){
 
 void rotaryDriverStart(uint16_t ticks) {
 	rotaryDriverReset();
+	set_forward(MP._originalLspeed, MP._originalLspeed);
 	MP._rotary_driver_state |= ROTARY_DRIVER_ACTIVE;
 	MP.rotary_driver_target_ticks = ticks;
-	MP._Lspeed = speed_before_left;
-	MP._Rspeed = speed_before_right;
 	setChange(1);
 }
 
-uint8_t rotaryDriverActive(void) {
+uint8_t rotaryDriverDone(void) {
 	if(MP.rotary_driver_ticks >= MP.rotary_driver_target_ticks) {
-		return 0;
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 void rotaryDriverStop(void) {

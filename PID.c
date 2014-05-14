@@ -17,9 +17,9 @@ void init_PID(void) {
 	PID_Motor._input			= 0;
 	PID_Motor._value 			= 20;
 	PID_Motor._interval 		= 100;
-	PID_Motor._Kp 				= 5;
-	PID_Motor._Ki 				= 1;
-	PID_Motor._Kd 				= 15;
+	PID_Motor._Kp 				= 8;
+	PID_Motor._Ki 				= 0.1;
+	PID_Motor._Kd 				= 1;
 	PID_Motor._error 			= 0;
 	PID_Motor._previous_error 	= 0;
 	PID_Motor._proportional	 	= 0;
@@ -41,25 +41,28 @@ void process_PID(void) {
 	}
 	*/
 
+
 	if(PID_Motor._state&PID_ACTIVE) {
-		if(PID_Motor._state&PID_TAKE_SAMPLE) {
-			PID_Motor._state &= ~(PID_TAKE_SAMPLE);
-			addInputValue(HFsensor);
-		}
-
-		if(PID_Motor._state&PID_TIMER_DONE) {
-			PID_Motor._state &= ~(PID_TIMER_DONE);
-			calculatePID();
-
-			//DEBUG
-			if(PID_Motor.output > 0){
-				platformPID(-PID_Motor.output,0);
+		if(checkFrontRight()&&checkBackRight()) {
+			if(PID_Motor._state&PID_TAKE_SAMPLE) {
+				PID_Motor._state &= ~(PID_TAKE_SAMPLE);
+				addInputValue(getIRSensorReading(IR_SENSOR_RB));
 			}
-			if(PID_Motor.output < 0){
-				platformPID(0,PID_Motor.output);
+
+			if(PID_Motor._state&PID_TIMER_DONE) {
+				PID_Motor._state &= ~(PID_TIMER_DONE);
+				calculatePID();
+
+				//DEBUG
+				if(PID_Motor.output > 0){
+					platformPID(-PID_Motor.output,0);
+				}
+				if(PID_Motor.output < 0){
+					platformPID(0,PID_Motor.output);
+				}
+				setChange(1);
+				resetInput();
 			}
-			setChange(1);
-			resetInput();
 		}
 	}
 }
@@ -199,18 +202,19 @@ void TIM2_IRQHandler(void) {
 		}
 
 		//Take sample every 10ms
+		if(PID_Motor._state&PID_ACTIVE) {
+			if(PID_Motor._timer_count%10 == 0) {
+				PID_Motor._state |= PID_TAKE_SAMPLE;
+			}
 
-		if(PID_Motor._timer_count%10 == 0) {
-			PID_Motor._state |= PID_TAKE_SAMPLE;
-		}
 
+			//Take sample every ms
+			//PID_Motor._state |= PID_TAKE_SAMPLE;
 
-		//Take sample every ms
-		//PID_Motor._state |= PID_TAKE_SAMPLE;
-
-		if(PID_Motor._timer_count >= PID_Motor._interval) {
-			PID_Motor._state |= PID_TIMER_DONE;
-			PID_Motor._state |= PID_RESET_TIMER_COUNT;
+			if(PID_Motor._timer_count >= PID_Motor._interval) {
+				PID_Motor._state |= PID_TIMER_DONE;
+				PID_Motor._state |= PID_RESET_TIMER_COUNT;
+			}
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}

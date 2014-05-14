@@ -95,7 +95,7 @@ uint8_t getMotorState(void);
 int isComplete(void);
 
 void rotaryDriverStart(uint16_t ticks);
-uint8_t rotaryDriverActive(void);
+uint8_t rotaryDriverDone(void);
 void rotaryDriverStop(void);
 void rotaryDriverCancel(void);
 void rotaryDriverReset(void);

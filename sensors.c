@@ -248,6 +248,10 @@ void process_sensors(void) {
 	}
 }
 
+float getIRSensorReading(uint8_t sensorID) {
+	return range[sensorID];
+}
+
 void checkWallDistance(void) {
 	//Left side check
 	if(range[IR_SENSOR_RF] <= IR_SENSOR_WALL_RIGHT_LIMIT+IR_SENSOR_OFFSET) {
@@ -281,6 +285,13 @@ uint8_t checkFrontRight(void) {
 	return S.ir_state&IR_SENSOR_GOT_WALL_RF;
 }
 
+uint8_t checkBackRight(void) {
+	return S.ir_state&IR_SENSOR_GOT_WALL_RB;
+}
+
+uint8_t checkBackLeft(void) {
+	return S.ir_state&IR_SENSOR_GOT_WALL_LB;
+}
 
 uint8_t checkLeftWall(void) {
 	if((S.ir_state&IR_SENSOR_GOT_WALL_LF)||(S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
