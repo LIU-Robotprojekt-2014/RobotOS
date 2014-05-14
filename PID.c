@@ -14,12 +14,18 @@
 PID PID_Motor;
 
 void init_PID(void) {
+	/*
+	 * "Good"
+	 * P = 2
+	 * I = 0.01
+	 * D = 5
+	 */
 	PID_Motor._input			= 0;
 	PID_Motor._value 			= 20;
 	PID_Motor._interval 		= 100;
-	PID_Motor._Kp 				= 8;
+	PID_Motor._Kp 				= 3;
 	PID_Motor._Ki 				= 0.1;
-	PID_Motor._Kd 				= 1;
+	PID_Motor._Kd 				= 5;
 	PID_Motor._error 			= 0;
 	PID_Motor._previous_error 	= 0;
 	PID_Motor._proportional	 	= 0;
@@ -28,6 +34,7 @@ void init_PID(void) {
 	PID_Motor._state 			= 0;
 	PID_Motor._timer_count 		= 0;
 	PID_Motor.output			= 0;
+	PID_Motor.values_to_mean 	= 0;
 	setupTimer(PID_Motor._interval);
 }
 
@@ -43,10 +50,19 @@ void process_PID(void) {
 
 
 	if(PID_Motor._state&PID_ACTIVE) {
-		if(checkFrontRight()&&checkBackRight()) {
+
+		//checkFrontRight()&&checkBackRight()
+		if(checkRightWall()) {
 			if(PID_Motor._state&PID_TAKE_SAMPLE) {
 				PID_Motor._state &= ~(PID_TAKE_SAMPLE);
-				addInputValue(getIRSensorReading(IR_SENSOR_RB));
+
+				if(checkFrontRight()) {
+					addInputValue(getIRSensorReading(IR_SENSOR_RF));
+				} else if (checkBackRight()) {
+					addInputValue(getIRSensorReading(IR_SENSOR_RB));
+				}
+
+
 			}
 
 			if(PID_Motor._state&PID_TIMER_DONE) {
@@ -100,15 +116,16 @@ void setPIDValue(float val) {
 	}
 }
 
-int ab = 0;
+
 void addInputValue(float value) {
-	PID_Motor._input += value/10;
-	ab++;
+	PID_Motor._input += value;
+	PID_Motor.values_to_mean++;
+
 }
 
 void resetInput(void) {
 	PID_Motor._input = 0;
-	ab = 0;
+	PID_Motor.values_to_mean = 0;
 }
 
 void calculatePID(void) {
@@ -136,7 +153,7 @@ void calculatePID(void) {
 		PID_Motor._integrator = 0;
 	}
 
-
+	PID_Motor._input /= PID_Motor.values_to_mean;
 	PID_Motor._error = PID_Motor._value - PID_Motor._input;
 
 	if(abs(PID_Motor._error) < PID_MINIMUM_ERROR) {
@@ -169,6 +186,10 @@ void deactivatePID(void) {
 
 int16_t getPIDOutput(void) {
 	return PID_Motor.output;
+}
+
+void resetPIDIntergrator(void) {
+	PID_Motor._state |= PID_RESET_INTEGRATOR;
 }
 
 //TODO: Temp for rotary timer

@@ -16,7 +16,8 @@
 #define MOTOR_DEFAULT_SPEED 100
 #define MOTOR_DEFAULT_TURN_SPEED 100
 #define MOTOR_LEFT_TICKS 248
-#define MOTOR_RIGHT_TICKS 280
+#define MOTOR_RIGHT_TICKS 240
+//#define MOTOR_RIGHT_TICKS 280
 
 #define PLATFORM_STOP 0
 #define PLATFORM_FORWARD 1
@@ -25,6 +26,7 @@
 #define PLATFORM_RIGHT 4
 
 #define ROTARY_DRIVER_ACTIVE 0x01
+#define ROTARY_DRIVER_NODE_TICK 100
 
 typedef struct Motor {
 	float _calibrate_speed;

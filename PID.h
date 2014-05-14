@@ -11,8 +11,8 @@
 #define WALL_DISTANCE_MINIMUM 1
 #define WALL_DISTANCE_MAXIMUM 9999
 
-#define PID_LOWER_LIMIT -70
-#define PID_UPPER_LIMIT 70
+#define PID_LOWER_LIMIT -90
+#define PID_UPPER_LIMIT 90
 
 #define PID_SAMPLE_TIME 0.1
 #define PID_MINIMUM_ERROR 1
@@ -31,6 +31,7 @@ typedef struct PID {
 	float _derivator;
 	uint8_t _state; //Private
 	uint16_t _timer_count;
+	uint16_t values_to_mean;
 	float output;
 
 } PID;
@@ -45,5 +46,6 @@ void calculatePID(void);
 void activePID(void);
 void deactivatePID(void);
 int16_t getPIDOutput(void);
+void resetPIDIntergrator(void);
 
 #endif

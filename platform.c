@@ -192,10 +192,10 @@ void process_platform() {
 						setOrderDone();
 					}
 				} else {
-					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.4) {
+					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.6) {
 						if(!checkRightWall()) {
 							deactivatePID();
-							rotaryDriverStart(200);
+							rotaryDriverStart(ROTARY_DRIVER_NODE_TICK);
 						}
 					}
 				}
@@ -342,6 +342,7 @@ void startForward(int distance, float distanceToWall, int ordNr){
 
 void orderStartForward(void) {
 	setPIDValue(getOrderLengthToWall()+IR_SENSOR_OFFSET);
+	resetPIDIntergrator();
 	activePID();
 	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 	//activateRotary();
