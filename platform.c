@@ -141,34 +141,6 @@ void init_platform(void) {
 }
 
 void process_platform() {
-	/*
-	if(MP._state&PLATFORM_LEFT || MP._state&PLATFORM_RIGHT) {
-		if(i>=istop){
-			set_stop();
-		}
-	}
-
-	if(!checkFrontRight()) {
-		deactivatePID();
-		speed_before_left = MP._Lspeed;
-		speed_before_right = MP._Rspeed;
-	}
-
-	if(i >= istop*0.8) {
-		if(!checkRightWall() && !MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE) {
-			rotaryDriverStart(80);
-		}
-
-		if(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE) {
-			if(!rotaryDriverActive()) {
-				set_stop();
-				orderComplete=orderNr;
-				rotaryDriverStop();
-
-			}
-		}
-	}
-	*/
 	if(getOrderID() != MP.completed_order) {
 		if(!(getOrderState()&ORDER_ACTIVE)) {
 			switch(getOrderType()) {
@@ -184,19 +156,33 @@ void process_platform() {
 			}
 		} else {
 			if(!(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE)) {
-				if(getOrderTargetTicks() <= 300) {
+				//<=290
+
+				if(MP._state == PLATFORM_FORWARD) {
+					if((!checkFrontRight() || !checkBackLeft()) && getOrderCurrentTicks() >= getOrderTargetTicks()*0.8) {
+						deactivatePID();
+						set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
+					}
+					if(getOrderTargetTicks() <= cmtoticks(25)) {
+						deactivatePID();
+						if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
+							set_stop();
+							setOrderDone();
+						}
+					} else {
+						if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.8) {
+							if((!checkBackRight() && !checkFrontRight()) || !checkBackLeft()) {
+								set_stop();
+								rotaryDriverStartCM(10);
+							}
+						}
+					}
+				}
+
+				if(MP._state == PLATFORM_LEFT || MP._state == PLATFORM_RIGHT) {
 					if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
 						set_stop();
-						deactivatePID();
-						MP.completed_order = getOrderID();
 						setOrderDone();
-					}
-				} else {
-					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.6) {
-						if(!checkRightWall()) {
-							deactivatePID();
-							rotaryDriverStart(ROTARY_DRIVER_NODE_TICK);
-						}
 					}
 				}
 			} else {
@@ -242,8 +228,8 @@ int set_forward(int ls, int rs) {
 	MP._Rspeed = rs;
 	MP._originalLspeed=ls;
 	MP._originalRspeed=rs;
-	MP._state = 1;
-	if(MP._state == 1) {
+	MP._state = PLATFORM_FORWARD;
+	if(MP._state == PLATFORM_FORWARD) {
 		return 0;
 	}
 	return -1;
@@ -266,8 +252,8 @@ int set_left(int ls, int rs) {
 	MP._Rspeed = rs;
 	MP._originalLspeed=ls;
 	MP._originalRspeed=rs;
-	MP._state = 3;
-	if(MP._state == 3) {
+	MP._state = PLATFORM_LEFT;
+	if(MP._state == PLATFORM_LEFT) {
 		return 0;
 	}
 	return -1;
@@ -278,16 +264,16 @@ int set_right(int ls, int rs) {
 	MP._Rspeed = rs;
 	MP._originalLspeed=ls;
 	MP._originalRspeed=rs;
-	MP._state = 4;
-	if(MP._state == 4) {
+	MP._state = PLATFORM_RIGHT;
+	if(MP._state == PLATFORM_RIGHT) {
 		return 0;
 	}
 	return -1;
 }
 int set_stop() {
 	change=1;
-	MP._state = 0;
-	if(MP._state == 0) {
+	MP._state = PLATFORM_STOP;
+	if(MP._state == PLATFORM_STOP) {
 		return 0;
 	}
 	return -1;
@@ -341,9 +327,11 @@ void startForward(int distance, float distanceToWall, int ordNr){
 }
 
 void orderStartForward(void) {
-	setPIDValue(getOrderLengthToWall()+IR_SENSOR_OFFSET);
+	setPIDValue((getOrderLengthToWall()/10.0)+IR_SENSOR_OFFSET);
 	resetPIDIntergrator();
-	activePID();
+	if(getOrderTargetTicks() >= cmtoticks(25)) {
+		activePID();
+	}
 	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 	//activateRotary();
 	setOrderActive();
@@ -407,6 +395,14 @@ void rotaryDriverStart(uint16_t ticks) {
 	setChange(1);
 }
 
+void rotaryDriverStartCM(uint16_t cm) {
+	rotaryDriverReset();
+	set_forward(MP._originalLspeed, MP._originalLspeed);
+	MP._rotary_driver_state |= ROTARY_DRIVER_ACTIVE;
+	MP.rotary_driver_target_ticks = 9.71*(cm)-37.47;
+	setChange(1);
+}
+
 uint8_t rotaryDriverDone(void) {
 	if(MP.rotary_driver_ticks >= MP.rotary_driver_target_ticks) {
 		return 1;
@@ -434,7 +430,9 @@ void rotaryDriverTick(void) {
 	}
 }
 
-
+float cmtoticks(float cm) {
+	return (9.71*(cm)-37.47);
+}
 
 void InitializeLEDs()
 {
@@ -448,3 +446,31 @@ void InitializeLEDs()
 
     GPIO_WriteBit(GPIOD, GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
 }
+
+
+/*
+				if(getOrderTargetTicks() <= 290) {
+					if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
+						set_stop();
+						deactivatePID();
+						setOrderDone();
+					}
+				} else {
+					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.6) {
+						if((!checkBackRight() && !checkFrontRight()) || !checkBackLeft()) {
+							set_stop();
+							rotaryDriverStartCM(10);
+						}
+					}
+					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.8) {
+						if(!checkRightWall()) {
+							if(!checkBackRight()) {
+								//deactivatePID();
+								set_stop();
+								rotaryDriverStartCM(1);
+							}
+						}
+					} else {
+						activePID();
+					}
+					*/

@@ -8,18 +8,19 @@
 #define IR_SENSOR_RB 1
 
 #define IR_SENSOR_LOWER_LIMIT 8
-#define IR_SENSOR_UPPER_LIMIT 50
+#define IR_SENSOR_UPPER_LIMIT 60
 
 #define IR_SENSOR_OFFSET 10
 
 #define IR_SENSOR_WALL_RIGHT_LIMIT 30 //Below value: got wall. Above value: no wall
-#define IR_SENSOR_WALL_LEFT_LIMIT 30  //Below value: got wall. Above value: no wall
+#define IR_SENSOR_WALL_LEFT_LIMIT 40  //Below value: got wall. Above value: no wall
 #define IR_SENSOR_GOT_WALL_RF 0x01 //Right front
 #define IR_SENSOR_GOT_WALL_RB 0x02 //Right back
 #define IR_SENSOR_GOT_WALL_LF 0x04 //Left front
 #define IR_SENSOR_GOT_WALL_LB 0x08 //Left back
 #define IR_SENSOR_SEND 0x10
 
+#define DISABLE_LF
 
 
 #define IR_SENSOR_STATE_GOT_WALL 0x01
@@ -60,6 +61,7 @@ void setupRotary(void);
 void process_sensors(void);
 void getVal(uint32_t arr[]);
 float getIRSensorReading(uint8_t sensorID);
+float getIRSensorReadingCM(uint8_t sensorID);
 void checkWallDistance(void);
 char* toArray(int number);
 char* revStr(char *str);

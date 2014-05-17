@@ -3,10 +3,10 @@
 
 #define BLUETOOTH_BUFFER_SIZE 60
 
-//#define BT_SOL	0x01
-//#define BT_EOL	0x0A
-#define BT_SOL	122
-#define BT_EOL	120
+#define BT_SOL 0x01
+#define BT_EOL 0x0A
+#define BT_SOL_DEBUG 122
+#define BT_EOL_DEBUG 120
 
 #define BT_SOL_FLAG 0x01
 #define BT_EOL_FLAG 0x02
@@ -14,6 +14,9 @@
 
 #define BT_TX_BUSY 0x01
 #define BT_TX_DONE 0x02
+
+#define BT_ORDER_DELAY_ACTIVE 0x01
+#define BT_ORDER_DELAY_DONE 0x02
 
 typedef struct BluetoothUnit {
    uint32_t _baudrate;
@@ -36,6 +39,10 @@ typedef struct BluetoothUnit {
    uint16_t _last_order;
    uint16_t _current_order;
 
+   uint8_t order_delay_state;
+   uint16_t order_delay_target_tick;
+   uint16_t order_delay_current_tick;
+
 } Bluetoothunit;
 
 void init_bluetooth(void);
@@ -54,5 +61,11 @@ void _clean_send_buffer(void);
 void _append_to_buffer(char c);
 uint8_t _buffer_count(void);
 uint8_t _clonePackageInBufferToPackage(void);
+
+void setOrderDelay(uint16_t ms);
+void tickOrderDelay(void);
+void resetOrderDelay(void);
+
+
 
 #endif

@@ -15,8 +15,8 @@
 
 #define MOTOR_DEFAULT_SPEED 100
 #define MOTOR_DEFAULT_TURN_SPEED 100
-#define MOTOR_LEFT_TICKS 248
-#define MOTOR_RIGHT_TICKS 240
+#define MOTOR_LEFT_TICKS 255
+#define MOTOR_RIGHT_TICKS 270
 //#define MOTOR_RIGHT_TICKS 280
 
 #define PLATFORM_STOP 0
@@ -26,7 +26,7 @@
 #define PLATFORM_RIGHT 4
 
 #define ROTARY_DRIVER_ACTIVE 0x01
-#define ROTARY_DRIVER_NODE_TICK 100
+#define ROTARY_DRIVER_NODE_TICK 80
 
 typedef struct Motor {
 	float _calibrate_speed;
@@ -97,6 +97,7 @@ uint8_t getMotorState(void);
 int isComplete(void);
 
 void rotaryDriverStart(uint16_t ticks);
+void rotaryDriverStartCM(uint16_t cm);
 uint8_t rotaryDriverDone(void);
 void rotaryDriverStop(void);
 void rotaryDriverCancel(void);
@@ -104,5 +105,7 @@ void rotaryDriverReset(void);
 void rotaryDriverTick(void);
 
 void InitializeLEDs();
+
+float cmtoticks(float cm);
 
 #endif

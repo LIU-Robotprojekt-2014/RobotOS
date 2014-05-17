@@ -10,8 +10,13 @@
 #include <stm32f4xx_tim.h>
 #include <stdio.h>
 #include <stm32f4xx_tim.h>
+#include <math.h>
 
 PID PID_Motor;
+PID PID_Angular;
+PID PID_Distance;
+
+float PID_Output_Sum = 0;
 
 void init_PID(void) {
 	/*
@@ -22,10 +27,10 @@ void init_PID(void) {
 	 */
 	PID_Motor._input			= 0;
 	PID_Motor._value 			= 20;
-	PID_Motor._interval 		= 100;
-	PID_Motor._Kp 				= 3;
-	PID_Motor._Ki 				= 0.1;
-	PID_Motor._Kd 				= 5;
+	PID_Motor._interval 		= 10;
+	PID_Motor._Kp 				= 6;
+	PID_Motor._Ki 				= 0;
+	PID_Motor._Kd 				= 10;
 	PID_Motor._error 			= 0;
 	PID_Motor._previous_error 	= 0;
 	PID_Motor._proportional	 	= 0;
@@ -35,7 +40,31 @@ void init_PID(void) {
 	PID_Motor._timer_count 		= 0;
 	PID_Motor.output			= 0;
 	PID_Motor.values_to_mean 	= 0;
+
+	_init_PID_Angular();
+
 	setupTimer(PID_Motor._interval);
+}
+
+void _init_PID_Angular(void) {
+	PID_Angular._input			= 0;
+	PID_Angular._value 			= 0;
+	PID_Angular._interval 		= 10;
+	PID_Angular._Kp 			= 10;
+	PID_Angular._Ki 			= 1;
+	PID_Angular._Kd 			= 1;
+	PID_Angular._error 			= 0;
+	PID_Angular._previous_error	= 0;
+	PID_Angular._proportional 	= 0;
+	PID_Angular._integrator		= 0;
+	PID_Angular._derivator 		= 0;
+	PID_Angular._state 			= 0;
+	PID_Angular._timer_count 	= 0;
+	PID_Angular.output			= 0;
+	PID_Angular.values_to_mean 	= 0;
+}
+void _init_PID_Distance(void) {
+
 }
 
 
@@ -53,31 +82,55 @@ void process_PID(void) {
 
 		//checkFrontRight()&&checkBackRight()
 		if(checkRightWall()) {
+			/*
 			if(PID_Motor._state&PID_TAKE_SAMPLE) {
 				PID_Motor._state &= ~(PID_TAKE_SAMPLE);
 
-				if(checkFrontRight()) {
-					addInputValue(getIRSensorReading(IR_SENSOR_RF));
-				} else if (checkBackRight()) {
+				if(checkBackRight()) {
 					addInputValue(getIRSensorReading(IR_SENSOR_RB));
+				} else if (checkFrontRight()) {
+					addInputValue(getIRSensorReading(IR_SENSOR_RF));
 				}
 
 
 			}
 
+			if(checkBackRight()) {
+				addInputValue(getIRSensorReading(IR_SENSOR_RB));
+			} else if (checkFrontRight()) {
+				addInputValue(getIRSensorReading(IR_SENSOR_RF));
+			}
+			*/
+
+
+
 			if(PID_Motor._state&PID_TIMER_DONE) {
 				PID_Motor._state &= ~(PID_TIMER_DONE);
+
+				if(checkBackRight() && checkFrontRight()) {
+					calculatePIDAngular();
+				}
 				calculatePID();
 
-				//DEBUG
-				if(PID_Motor.output > 0){
-					platformPID(-PID_Motor.output,0);
+				PID_Output_Sum = PID_Motor.output+PID_Angular.output;
+				if(PID_Output_Sum > PID_UPPER_LIMIT) {
+					PID_Output_Sum = PID_UPPER_LIMIT;
+				} else if (PID_Output_Sum < PID_LOWER_LIMIT) {
+					PID_Output_Sum = PID_LOWER_LIMIT;
 				}
-				if(PID_Motor.output < 0){
-					platformPID(0,PID_Motor.output);
+
+
+				//DEBUG
+				if(PID_Output_Sum > 0){
+					platformPID(-PID_Output_Sum,0);
+				}
+				if(PID_Output_Sum < 0){
+					platformPID(0,PID_Output_Sum);
 				}
 				setChange(1);
 				resetInput();
+				PID_Motor.output = 0;
+				PID_Angular.output = 0;
 			}
 		}
 	}
@@ -129,32 +182,19 @@ void resetInput(void) {
 }
 
 void calculatePID(void) {
-	/*
-	Error = Set_Distance - Range
-	if(abs(Error) < 1) {
-	    Error = 0
-	}
-	P = Error
-	I = I + Error*0.1
-	D = (Error - Error_prev)/0.1
-
-	PID_value = (Kp*P) + (Ki*I) + (Kd*D)
-	Error_prev = Error
-	#Thruster = Error + PID_value
-	if(PID_value > 16000) {
-	    PID_value = 16000
-	} elseif (PID_value < -16000) {
-	    PID_value = -16000
-	}
-	Thruster = PID_value
-	*/
 	if(PID_Motor._state&PID_RESET_INTEGRATOR) {
 		PID_Motor._state &= ~(PID_RESET_INTEGRATOR);
 		PID_Motor._integrator = 0;
 	}
 
-	PID_Motor._input /= PID_Motor.values_to_mean;
-	PID_Motor._error = PID_Motor._value - PID_Motor._input;
+	//PID_Motor._input /= PID_Motor.values_to_mean;
+	if(checkBackRight()) {
+		PID_Motor._error = PID_Motor._value - getIRSensorReadingCM(IR_SENSOR_RB) + IR_SENSOR_OFFSET;
+	} else if (checkFrontRight()) {
+		PID_Motor._error = PID_Motor._value - getIRSensorReadingCM(IR_SENSOR_RF) + IR_SENSOR_OFFSET;
+	}
+
+	//PID_Motor._error = PID_Motor._value - PID_Motor._input;
 
 	if(abs(PID_Motor._error) < PID_MINIMUM_ERROR) {
 		PID_Motor._error = 0;
@@ -176,6 +216,40 @@ void calculatePID(void) {
 
 	PID_Motor._previous_error = PID_Motor._error;
 }
+
+
+void calculatePIDAngular(void) {
+	if(PID_Angular._state&PID_RESET_INTEGRATOR) {
+		PID_Angular._state &= ~(PID_RESET_INTEGRATOR);
+		PID_Angular._integrator = 0;
+	}
+
+	//PID_Angular._input /= PID_Angular.values_to_mean;
+	PID_Angular._error = getIRSensorReading(IR_SENSOR_RF)-getIRSensorReading(IR_SENSOR_RB);
+	//PID_Angular._error = LatestReading[IR_SENSOR_RB]-LatestReading[IR_SENSOR_RF];
+	//PID_Angular._error = PID_Angular._value - PID_Angular._input;
+
+	if(abs(PID_Angular._error) < 2) {
+		PID_Angular._error = 0;
+	}
+
+	PID_Angular._proportional	= PID_Angular._error;
+	PID_Angular._integrator 	+= PID_Angular._error*PID_SAMPLE_TIME;
+	PID_Angular._derivator 	= (PID_Angular._error-PID_Angular._previous_error)/PID_SAMPLE_TIME;
+
+	PID_Angular.output = PID_Angular._Kp*PID_Angular._proportional;
+	PID_Angular.output += PID_Angular._Ki*PID_Angular._integrator;
+	PID_Angular.output += PID_Angular._Kd*PID_Angular._derivator;
+
+	if(PID_Angular.output >= PID_UPPER_LIMIT) {
+		PID_Angular.output = PID_UPPER_LIMIT;
+	} else if(PID_Angular.output <= PID_LOWER_LIMIT) {
+		PID_Angular.output = PID_LOWER_LIMIT;
+	}
+	PID_Angular._previous_error = PID_Angular._error;
+}
+
+
 
 void activePID(void) {
 	PID_Motor._state |= PID_ACTIVE;
@@ -207,31 +281,26 @@ void TIM2_IRQHandler(void) {
 	}
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
-		PID_Motor._timer_count++;
-
-
+		/*
 		rot_ms++;
 		if(rot_ms >= ROT_MS) {
-			sendRotaryTick();
+			//sendRotaryTick();
 			rot_ms = 0;
 		}
 
 		ir_ms++;
 		if(ir_ms >= IR_MS) {
 			//sendIRSensors();
+			 *
 			ir_ms = 0;
 		}
+		*/
+		tickOrderDelay();
 
 		//Take sample every 10ms
 		if(PID_Motor._state&PID_ACTIVE) {
-			if(PID_Motor._timer_count%10 == 0) {
-				PID_Motor._state |= PID_TAKE_SAMPLE;
-			}
-
-
-			//Take sample every ms
+			PID_Motor._timer_count++;
 			//PID_Motor._state |= PID_TAKE_SAMPLE;
-
 			if(PID_Motor._timer_count >= PID_Motor._interval) {
 				PID_Motor._state |= PID_TIMER_DONE;
 				PID_Motor._state |= PID_RESET_TIMER_COUNT;

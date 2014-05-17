@@ -16,9 +16,11 @@
 #include <stm32f4xx_syscfg.h>
 
 
+
 Sensors S;
 volatile uint16_t ADCConvertedValue[4];
-float range[4];
+volatile float LatestReading[4];
+volatile float range[4];
 
 void init_sensors(void) {
 	setupIR();
@@ -102,10 +104,18 @@ void setupIR(void) {
 	ADC_CommonInitStructure.ADC_DMAAccessMode = ADC_DMAAccessMode_Disabled;
 	ADC_CommonInit(&ADC_CommonInitStructure);
 
+//#define C440
+#ifndef C440
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_10,1,ADC_SampleTime_144Cycles);
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_11,2,ADC_SampleTime_144Cycles);
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_12,3,ADC_SampleTime_144Cycles);
+	ADC_RegularChannelConfig(ADC1,ADC_Channel_13,4,ADC_SampleTime_144Cycles);
+#else
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_10,1,ADC_SampleTime_480Cycles);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_11,2,ADC_SampleTime_480Cycles);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_12,3,ADC_SampleTime_480Cycles);
 	ADC_RegularChannelConfig(ADC1,ADC_Channel_13,4,ADC_SampleTime_480Cycles);
+#endif
 
 	ADC_DMARequestAfterLastTransferCmd(ADC1, ENABLE);
 
@@ -196,10 +206,10 @@ void process_sensors(void) {
 	}
 
 	if(S.ir_state&IR_SENSOR_SEND) {
-		char* s1 = toArray(range[0]);
-		char* s2 = toArray(range[1]);
-		char* s3 = toArray(range[2]);
-		char* s4 = toArray(range[3]);
+		char* s1 = toArray(range[IR_SENSOR_LF]);
+		char* s2 = toArray(range[IR_SENSOR_RF]);
+		char* s3 = toArray(range[IR_SENSOR_LB]);
+		char* s4 = toArray(range[IR_SENSOR_RB]);
 		if(send_ir_sensors(s1,s2,s3,s4) == 0) {
 			S.ir_state &= ~(IR_SENSOR_SEND);
 		}
@@ -210,8 +220,7 @@ void process_sensors(void) {
 	}
 
 	int i;
-	float derp;
-	if(ADCConvertedValue[3] != 0xFF) {
+	if(ADCConvertedValue[0] != 0xFF && ADCConvertedValue[3] != 0xFF) {
 
 #ifdef SENS_TEST
 		sensor_array_test[sensor_i++] = ADCConvertedValue[3];
@@ -225,35 +234,37 @@ void process_sensors(void) {
 		}
 #endif
 		for(i=0; i<4; i++){
-			range[i]=0;
-			derp=ADCConvertedValue[i];
 			//range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
 			//range[i] = 17.77*pow(derp*3/4096, (double)(-0.9524+ 0.1258));
 			//range[i] = 195400*pow(derp, (double)(-1.243));
 			//range[i] = (10250*pow(derp, (double)(-0.7659)))-12.84;
-			range[i] = (5834*pow(derp, (double)(-0.697)))-11.98;
-
+			range[i] = (5834*pow((float)ADCConvertedValue[i], (float)(-0.697)))-11.98;
+			LatestReading[i] = ADCConvertedValue[i];
 			if(range[i] > IR_SENSOR_UPPER_LIMIT) {
 				range[i] = IR_SENSOR_UPPER_LIMIT;
 			} else if(range[i] < IR_SENSOR_LOWER_LIMIT) {
 				range[i] = IR_SENSOR_LOWER_LIMIT;
 			}
 
-			S.IR[i]._latest_reading = range[i];
+			//S.IR[i]._latest_reading = range[i];
 			ADCConvertedValue[i] = 0xFF;
 		}
-		HFsensor=range[IR_SENSOR_RB];
-		HBsensor=range[1];
+		//HFsensor=range[IR_SENSOR_RB];
+		//HBsensor=range[1];
 		checkWallDistance();
 	}
 }
 
 float getIRSensorReading(uint8_t sensorID) {
+	return LatestReading[sensorID];
+}
+
+float getIRSensorReadingCM(uint8_t sensorID) {
 	return range[sensorID];
 }
 
 void checkWallDistance(void) {
-	//Left side check
+	//Rigth side check
 	if(range[IR_SENSOR_RF] <= IR_SENSOR_WALL_RIGHT_LIMIT+IR_SENSOR_OFFSET) {
 		S.ir_state |= IR_SENSOR_GOT_WALL_RF;
 	} else {
@@ -264,12 +275,14 @@ void checkWallDistance(void) {
 	} else {
 		S.ir_state &= ~(IR_SENSOR_GOT_WALL_RB);
 	}
-	//Right side check
+	//Left side check
+	#ifndef DISABLE_LF
 	if(range[IR_SENSOR_LF] <= IR_SENSOR_WALL_LEFT_LIMIT+IR_SENSOR_OFFSET) {
 		S.ir_state |= IR_SENSOR_GOT_WALL_LF;
 	} else {
 		S.ir_state &= ~(IR_SENSOR_GOT_WALL_LF);
 	}
+	#endif
 	if(range[IR_SENSOR_LB] <= IR_SENSOR_WALL_LEFT_LIMIT+IR_SENSOR_OFFSET) {
 		S.ir_state |= IR_SENSOR_GOT_WALL_LB;
 	} else {
@@ -278,29 +291,51 @@ void checkWallDistance(void) {
 }
 
 uint8_t checkFrontLeft(void) {
-	return S.ir_state&IR_SENSOR_GOT_WALL_LF;
-}
-
-uint8_t checkFrontRight(void) {
-	return S.ir_state&IR_SENSOR_GOT_WALL_RF;
-}
-
-uint8_t checkBackRight(void) {
-	return S.ir_state&IR_SENSOR_GOT_WALL_RB;
-}
-
-uint8_t checkBackLeft(void) {
-	return S.ir_state&IR_SENSOR_GOT_WALL_LB;
-}
-
-uint8_t checkLeftWall(void) {
-	if((S.ir_state&IR_SENSOR_GOT_WALL_LF)||(S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
+	if(S.ir_state&IR_SENSOR_GOT_WALL_LF) {
 		return 1;
 	}
 	return 0;
 }
+
+uint8_t checkFrontRight(void) {
+	if(S.ir_state&IR_SENSOR_GOT_WALL_RF) {
+		return 1;
+	}
+	return 0;
+}
+
+uint8_t checkBackRight(void) {
+	if(S.ir_state&IR_SENSOR_GOT_WALL_RB) {
+		return 1;
+	}
+	return 0;
+}
+
+uint8_t checkBackLeft(void) {
+	if(S.ir_state&IR_SENSOR_GOT_WALL_LB) {
+		return 1;
+	}
+	return 0;
+}
+
+#ifdef DISABLE_LF
+uint8_t checkLeftWall(void) {
+	if((S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
+		return 1;
+	}
+	return 0;
+}
+#else
+uint8_t checkLeftWall(void) {
+	if((S.ir_state&IR_SENSOR_GOT_WALL_LF)&&(S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
+		return 1;
+	}
+	return 0;
+}
+#endif
+
 uint8_t checkRightWall(void) {
-	if((S.ir_state&IR_SENSOR_GOT_WALL_RF)||(S.ir_state&IR_SENSOR_GOT_WALL_RB)) {
+	if((S.ir_state&IR_SENSOR_GOT_WALL_RF)&&(S.ir_state&IR_SENSOR_GOT_WALL_RB)) {
 		return 1;
 	}
 	return 0;
@@ -368,6 +403,7 @@ void EXTI1_IRQHandler(void) {
 
 		rotaryDriverTick();
 		tickOrder();
+
 
 
 		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);

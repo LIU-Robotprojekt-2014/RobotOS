@@ -11,11 +11,13 @@
 #define WALL_DISTANCE_MINIMUM 1
 #define WALL_DISTANCE_MAXIMUM 9999
 
-#define PID_LOWER_LIMIT -90
-#define PID_UPPER_LIMIT 90
+#define PID_LOWER_LIMIT -85
+#define PID_UPPER_LIMIT 85
 
-#define PID_SAMPLE_TIME 0.1
-#define PID_MINIMUM_ERROR 1
+#define PID_SAMPLE_TIME 0.01
+#define PID_MINIMUM_ERROR 0.5
+
+#define PID_ANGULAR_SENSOR_DIST 9
 
 typedef struct PID {
 	float _input;
@@ -37,6 +39,8 @@ typedef struct PID {
 } PID;
 
 void init_PID(void);
+void _init_PID_Angular(void);
+void _init_PID_Distance(void);
 void process_PID(void);
 void setupTimer(float interval);
 void setPIDValue(float val);

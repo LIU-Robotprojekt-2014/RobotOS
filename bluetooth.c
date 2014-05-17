@@ -31,6 +31,10 @@ void init_bluetooth(void) {
 	BT._last_order 		= 0;
 	BT._current_order 	= 999; //TODO: Change to 0
 
+	BT.order_delay_state 		= 0;
+	BT.order_delay_target_tick 	= 0;
+	BT.order_delay_current_tick = 0;
+
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
@@ -126,8 +130,15 @@ void USART3_IRQHandler(void) {
 void process_bluetooth(void) {
 
 	if(checkOrderDone()) {
-		acknowledge_order(toArray(getOrderID()));
-		resetOrder();
+		if(!BT.order_delay_state&BT_ORDER_DELAY_ACTIVE) {
+			setOrderDelay(500);
+		} else {
+			if(BT.order_delay_state&BT_ORDER_DELAY_DONE) {
+				acknowledge_order(toArray(getOrderID()));
+				resetOrder();
+				resetOrderDelay();
+			}
+		}
 	}
 
 	if((BT._flags&BT_SOL_FLAG) && (BT._flags&BT_EOL_FLAG)) {
@@ -231,13 +242,20 @@ void parse_C_command(void) {
 			distance 		= atoi(a1);
 			lenght_to_wall  = atoi(a2);
 			order	 		= atoi(a3);
-			if(distance > 1 && distance < 9999) {
+			if(distance >= 1 && distance <= 9999) {
 				//startForward(distance, lenght_to_wall, order);
 				//BT._current_order = (uint16_t)a3;
 				//acknowledge_order(a3);
 				resetOrder();
-				setOrderTargetTicks(distance*(10/9));
-				setOrderLengthToWall(lenght_to_wall);
+
+				//TODO: Crossing quick fix
+				/*
+				if(distance == 230) {
+					distance = 130;
+				}*/
+
+				setOrderTargetTicks(9.71*(distance/10)-37.47);
+				setOrderLengthToWall(lenght_to_wall/10);
 				setOrderTypeForward();
 				setOrderID(order);
 
@@ -307,6 +325,7 @@ void parse_C_command(void) {
 }
 
 void acknowledge_order(char* order) {
+	int check = 5;
 	char str1[] = {"C99|"};
 	char str3[] = {"\n"};
 	char * new_str ;
@@ -318,7 +337,8 @@ void acknowledge_order(char* order) {
 	}
 	BT._last_order = BT._current_order;
 	BT._current_order = 0;
-	_send_package(new_str, strlen(new_str));
+
+	check = _send_package(new_str, strlen(new_str));
 	free(new_str);
 }
 uint8_t send_ir_sensors(char* s1, char* s2, char* s3, char* s4) {
@@ -425,13 +445,13 @@ void _append_to_buffer(char c) {
 		_clean_buffer();
 	}
 
-	if(c == BT_SOL) {
+	if(c == BT_SOL || c == BT_SOL_DEBUG) {
 		if(BT._rx_counter > 0) {
 			_clean_buffer();
 		}
 		BT._flags |= BT_SOL_FLAG;
 		BT._sol_position = BT._rx_counter;
-	} else if (c == BT_EOL) {
+	} else if (c == BT_EOL || c == BT_EOL_DEBUG) {
 		if(BT._flags&BT_SOL_FLAG) {
 			BT._flags |= BT_EOL_FLAG;
 			BT._eol_position = BT._rx_counter;
@@ -462,7 +482,7 @@ uint8_t _clonePackageInBufferToPackage(void) {
 	uint8_t length = 0;
 	int8_t size;
 	uint8_t i;
-	if((BT._buffer[BT._sol_position] == BT_SOL) && (BT._buffer[BT._eol_position] == BT_EOL)) {
+	if(((BT._buffer[BT._sol_position] == BT_SOL || BT._buffer[BT._sol_position] == BT_SOL_DEBUG)) && (BT._buffer[BT._eol_position] == BT_EOL ||BT._buffer[BT._eol_position] == BT_EOL_DEBUG)) {
 		size = BT._eol_position - BT._sol_position;
 		if(size > 0) {
 			for(i = BT._sol_position+1; i < BT._eol_position; i++) {
@@ -472,4 +492,25 @@ uint8_t _clonePackageInBufferToPackage(void) {
 		}
 	}
 	return length;
+}
+
+void setOrderDelay(uint16_t ms) {
+	resetOrderDelay();
+	BT.order_delay_target_tick = ms;
+	BT.order_delay_state |= BT_ORDER_DELAY_ACTIVE;
+}
+
+void tickOrderDelay(void) {
+	if(BT.order_delay_state&BT_ORDER_DELAY_ACTIVE) {
+		BT.order_delay_current_tick++;
+		if(BT.order_delay_current_tick >= BT.order_delay_target_tick) {
+			BT.order_delay_state |= BT_ORDER_DELAY_DONE;
+		}
+	}
+}
+
+void resetOrderDelay(void) {
+	BT.order_delay_current_tick = 0;
+	BT.order_delay_target_tick 	= 0;
+	BT.order_delay_state 		= 0;
 }
