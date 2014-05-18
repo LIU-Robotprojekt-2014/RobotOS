@@ -287,11 +287,11 @@ void TIM2_IRQHandler(void) {
 			//sendRotaryTick();
 			rot_ms = 0;
 		}
-
+		*/
+		/*
 		ir_ms++;
 		if(ir_ms >= IR_MS) {
-			//sendIRSensors();
-			 *
+			sendIRSensors();
 			ir_ms = 0;
 		}
 		*/
