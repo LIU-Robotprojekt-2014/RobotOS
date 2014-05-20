@@ -10,9 +10,9 @@
 #define IR_SENSOR_LOWER_LIMIT 8
 #define IR_SENSOR_UPPER_LIMIT 60
 
-#define IR_SENSOR_OFFSET 12
+#define IR_SENSOR_OFFSET 8
 
-#define IR_SENSOR_WALL_RIGHT_LIMIT 30 //Below value: got wall. Above value: no wall
+#define IR_SENSOR_WALL_RIGHT_LIMIT 24 //Below value: got wall. Above value: no wall
 #define IR_SENSOR_WALL_LEFT_LIMIT 40  //Below value: got wall. Above value: no wall
 #define IR_SENSOR_GOT_WALL_RF 0x01 //Right front
 #define IR_SENSOR_GOT_WALL_RB 0x02 //Right back

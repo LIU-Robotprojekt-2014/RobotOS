@@ -25,12 +25,21 @@ void init_PID(void) {
 	 * I = 0.01
 	 * D = 5
 	 */
+
+
 	PID_Motor._input			= 0;
 	PID_Motor._value 			= 20;
 	PID_Motor._interval 		= 10;
+#ifdef PID_ANGULAR
 	PID_Motor._Kp 				= 6;
 	PID_Motor._Ki 				= 0;
 	PID_Motor._Kd 				= 10;
+#else
+	PID_Motor._Kp 				= 15;
+	PID_Motor._Ki 				= 1;
+	PID_Motor._Kd 				= 15;
+#endif
+
 	PID_Motor._error 			= 0;
 	PID_Motor._previous_error 	= 0;
 	PID_Motor._proportional	 	= 0;
@@ -108,7 +117,7 @@ void process_PID(void) {
 				PID_Motor._state &= ~(PID_TIMER_DONE);
 
 				if(checkBackRight() && checkFrontRight()) {
-					calculatePIDAngular();
+					//calculatePIDAngular();
 				}
 				calculatePID();
 
@@ -188,11 +197,17 @@ void calculatePID(void) {
 	}
 
 	//PID_Motor._input /= PID_Motor.values_to_mean;
-	if(checkBackRight()) {
-		PID_Motor._error = PID_Motor._value - getIRSensorReadingCM(IR_SENSOR_RB) + IR_SENSOR_OFFSET;
-	} else if (checkFrontRight()) {
+	if(checkFrontRight()) {
 		PID_Motor._error = PID_Motor._value - getIRSensorReadingCM(IR_SENSOR_RF) + IR_SENSOR_OFFSET;
+	} else {
+		PID_Motor._error = 0;
 	}
+
+
+	/*else if (checkBackRight()) {
+		PID_Motor._error = PID_Motor._value - getIRSensorReadingCM(IR_SENSOR_RB) + IR_SENSOR_OFFSET;
+	}*/
+
 
 	//PID_Motor._error = PID_Motor._value - PID_Motor._input;
 

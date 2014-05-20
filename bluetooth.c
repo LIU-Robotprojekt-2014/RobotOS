@@ -131,7 +131,7 @@ void process_bluetooth(void) {
 
 	if(checkOrderDone()) {
 		if(!BT.order_delay_state&BT_ORDER_DELAY_ACTIVE) {
-			setOrderDelay(500);
+			setOrderDelay(BT_ORDER_DELAY_MS);
 		} else {
 			if(BT.order_delay_state&BT_ORDER_DELAY_DONE) {
 				acknowledge_order(toArray(getOrderID()));

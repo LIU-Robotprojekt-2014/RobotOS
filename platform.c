@@ -159,12 +159,13 @@ void process_platform() {
 				//<=290
 
 				if(MP._state == PLATFORM_FORWARD) {
-					if((!checkFrontRight() || !checkBackLeft()) && getOrderCurrentTicks() >= getOrderTargetTicks()*0.7) {
+					if(!checkFrontRight() && (getOrderCurrentTicks() >= getOrderTargetTicks()*0.4)) {
 						deactivatePID();
 						set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 					}
 					if(getOrderTargetTicks() <= cmtoticks(25)) {
 						deactivatePID();
+						set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 						if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
 							set_stop();
 							setOrderDone();
@@ -174,7 +175,7 @@ void process_platform() {
 							if((!checkBackRight() && !checkFrontRight()) || !checkBackLeft()) {
 								set_stop();
 								if(getOrderLengthToWall() == 9.5) {
-									rotaryDriverStartCM(9);
+									rotaryDriverStartCM(4);
 								} else {
 									rotaryDriverStartCM(13);
 								}
