@@ -169,7 +169,7 @@ void setupRotary(void) {
 
 	EXTI_InitStructure.EXTI_Line = EXTI_Line1;
 	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
 	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
 	EXTI_Init(&EXTI_InitStructure);
 
@@ -275,14 +275,11 @@ void checkWallDistance(void) {
 	} else {
 		S.ir_state &= ~(IR_SENSOR_GOT_WALL_RB);
 	}
-	//Left side check
-	#ifndef DISABLE_LF
 	if(range[IR_SENSOR_LF] <= IR_SENSOR_WALL_LEFT_LIMIT+IR_SENSOR_OFFSET) {
 		S.ir_state |= IR_SENSOR_GOT_WALL_LF;
 	} else {
 		S.ir_state &= ~(IR_SENSOR_GOT_WALL_LF);
 	}
-	#endif
 	if(range[IR_SENSOR_LB] <= IR_SENSOR_WALL_LEFT_LIMIT+IR_SENSOR_OFFSET) {
 		S.ir_state |= IR_SENSOR_GOT_WALL_LB;
 	} else {
@@ -394,18 +391,14 @@ void EXTI1_IRQHandler(void) {
 	//check if EXTI line is asserted
 	if(EXTI_GetITStatus(EXTI_Line1) != RESET) {
 		EXTI_ClearFlag(EXTI_Line1); //clear interrupt
-		i++;
-		itot++;
-
+		//i++;
+		//itot++;
 		//For speed
-		S.ROT.tick++;
-
-
+		//S.ROT.tick++;
+		rotaryDriverTick();
 		rotaryDriverTick();
 		tickOrder();
-
-
-
+		tickOrder();
 		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 	}
 }

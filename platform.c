@@ -9,8 +9,6 @@
 #include <stdio.h>
 #include "PID.h"
 #include "order.h"
-
-
 MotorPlatform MP;
 /*
  * States:
@@ -21,10 +19,10 @@ MotorPlatform MP;
  * 4: Right
  *
  */
-  GPIO_InitTypeDef GPIO_InitStructure;
-  TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-  TIM_OCInitTypeDef  TIM_OCInitStructure;
-  int change=0;
+GPIO_InitTypeDef GPIO_InitStructure;
+TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+TIM_OCInitTypeDef  TIM_OCInitStructure;
+int change=0;
 
 
 void TIM_Config(void)
@@ -49,7 +47,6 @@ void TIM_Config(void)
   GPIO_PinAFConfig(GPIOC, GPIO_PinSource8, GPIO_AF_TIM3);
   GPIO_PinAFConfig(GPIOC, GPIO_PinSource9, GPIO_AF_TIM3);
 }
-
 void PWM_Config(int period)
 {
   uint16_t PrescalerValue = 0;
@@ -87,7 +84,6 @@ void PWM_Config(int period)
   /* TIM3 enable counter */
   TIM_Cmd(TIM3, ENABLE);
 }
-
 void PWM_SetDC(uint16_t channel,uint16_t dutycycle) {
   if (channel == 1) {
 	  TIM3->CCR1 = dutycycle;
@@ -102,7 +98,6 @@ void PWM_SetDC(uint16_t channel,uint16_t dutycycle) {
 	  TIM3->CCR4 = dutycycle;
   }
 }
-
 void init_platform(void) {
 	MP._Lspeed = 100;
 	MP._Rspeed = 100;
@@ -126,6 +121,13 @@ void init_platform(void) {
 
 	//Orders
 	MP.completed_order = 0;
+
+	//Heading
+	MP.heading_state = PLATFORM_HEADING_YNEG;
+	MP.x_max 		 = 664; //682
+	MP.y_max 		 = 308;
+	MP.x_pos 		 = 0;
+	MP.y_pos 		 = 154;
 
 
 	istop=0;
@@ -155,51 +157,51 @@ void process_platform() {
 					break;
 			}
 		} else {
-			if(!(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE)) {
-				//<=290
-
+			if(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE) {
+				if(rotaryDriverDone()) {
+					deactivatePID();
+					set_stop();
+					setOrderDone();
+					MP.completed_order = getOrderID();
+					rotaryDriverStop();
+					rotaryDriverReset();
+				}
+			} else {
 				if(MP._state == PLATFORM_FORWARD) {
-					if(!checkFrontRight() && (getOrderCurrentTicks() >= getOrderTargetTicks()*0.4)) {
+					if(getOrderTargetTicks() < cmtoticks(PLATFORM_PID_THRESHOLD)) {
 						deactivatePID();
-						set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
-					}
-					if(getOrderTargetTicks() <= cmtoticks(25)) {
-						deactivatePID();
-						set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
+						//set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 						if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
 							set_stop();
 							setOrderDone();
+							MP.completed_order = getOrderID();
 						}
 					} else {
-						if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.7) {
-							if((!checkBackRight() && !checkFrontRight()) || !checkBackLeft()) {
+						if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.6) {
+							if((!checkBackRight() && !checkFrontRight()) || (!checkBackLeft() && !checkFrontLeft())) {
 								set_stop();
-								if(getOrderLengthToWall() == 9.5) {
-									rotaryDriverStartCM(4);
+								deactivatePID();
+								if(getOrderLengthToWall() >= 7) {
+									rotaryDriverStartCM(9);
 								} else {
-									rotaryDriverStartCM(13);
+									rotaryDriverStartCM(7);
 								}
 
 							}
 						}
 					}
-				}
-
-				if(MP._state == PLATFORM_LEFT || MP._state == PLATFORM_RIGHT) {
+				} else if(MP._state == PLATFORM_LEFT || MP._state == PLATFORM_RIGHT) {
+					deactivatePID();
 					if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
 						set_stop();
 						setOrderDone();
+						MP.completed_order = getOrderID();
 					}
 				}
-			} else {
-				if(rotaryDriverDone()) {
-					set_stop();
-					setOrderDone();
-					rotaryDriverStop();
-				}
-			}
+
 			}
 		}
+	}
 
 	if(change==1){
 		switch(MP._state){
@@ -284,115 +286,116 @@ int set_stop() {
 	}
 	return -1;
 }
-
 void _go_forward(void) {
 	_stop();
 	PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
 	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
 }
-
 void _go_backward(void) {
 	_stop();
 	PWM_SetDC(PLATFORM_LEFT_BACKWARD,40*MP._Lspeed*MP._left_side._calibrate_speed);
 	PWM_SetDC(PLATFORM_RIGHT_BACKWARD,40*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
-
 void _turn_left(void) {
 	_stop();
 	PWM_SetDC(PLATFORM_LEFT_BACKWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
 	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
-
 void _turn_right(void) {
 	_stop();
 	PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
 	PWM_SetDC(PLATFORM_RIGHT_BACKWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
 }
-
-
 void _stop(void) {
 	PWM_SetDC(1,0);
 	PWM_SetDC(2,0);
 	PWM_SetDC(3,0);
 	PWM_SetDC(4,0);
-
 }
-
-void startForward(int distance, float distanceToWall, int ordNr){
-	// 3000i = 2700cm
-	// 1cm = 3000/2700 i = 1.111111111 = 10/9
-	i=0;
-	istop=distance*10/9;
-	setPIDValue(distanceToWall+IR_SENSOR_OFFSET);
-	activePID();
-	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
-	activateRotary();
-	orderNr=ordNr;
-}
-
 void orderStartForward(void) {
-	setPIDValue((getOrderLengthToWall()/10.0)+IR_SENSOR_OFFSET);
+	setPIDValue(getOrderLengthToWall()+IR_SENSOR_OFFSET);
 	resetPIDIntergrator();
-	if(getOrderTargetTicks() >= cmtoticks(25)) {
+
+	movePlatformCM(MP.order_length);
+
+	if(isPlatformMovingIntoWall()) {
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(4));
+	}
+
+	if(getOrderTargetTicks() >= cmtoticks(PLATFORM_PID_THRESHOLD)) {
+		if(getOrderLengthToWall() < 9.0) {
+			setPIDSmall();
+		} else {
+			setPIDWide();
+		}
 		activePID();
+	} else {
+		deactivatePID();
 	}
 	set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
+
 	//activateRotary();
 	setOrderActive();
 }
-
 void orderStartLeftTurn(void) {
 	set_left(MOTOR_DEFAULT_TURN_SPEED,MOTOR_DEFAULT_TURN_SPEED);
 	setOrderTargetTicks(MOTOR_LEFT_TICKS);
 	setOrderActive();
+	switch(MP.heading_state) {
+		case(PLATFORM_HEADING_XNEG):
+			MP.heading_state = PLATFORM_HEADING_YNEG;
+			break;
+		case(PLATFORM_HEADING_XPOS):
+			MP.heading_state = PLATFORM_HEADING_YPOS;
+			break;
+		case(PLATFORM_HEADING_YNEG):
+			MP.heading_state = PLATFORM_HEADING_XPOS;
+			break;
+		case(PLATFORM_HEADING_YPOS):
+			MP.heading_state = PLATFORM_HEADING_XNEG;
+			break;
+	}
 }
-
 void orderStartRightTurn(void) {
 	set_right(MOTOR_DEFAULT_TURN_SPEED,MOTOR_DEFAULT_TURN_SPEED);
 	setOrderTargetTicks(MOTOR_RIGHT_TICKS);
 	setOrderActive();
+	switch(MP.heading_state) {
+		case(PLATFORM_HEADING_XNEG):
+			MP.heading_state = PLATFORM_HEADING_YPOS;
+			break;
+		case(PLATFORM_HEADING_XPOS):
+			MP.heading_state = PLATFORM_HEADING_YNEG;
+			break;
+		case(PLATFORM_HEADING_YNEG):
+			MP.heading_state = PLATFORM_HEADING_XNEG;
+			break;
+		case(PLATFORM_HEADING_YPOS):
+			MP.heading_state = PLATFORM_HEADING_XPOS;
+			break;
+	}
 }
-
-void startLeft(){
-	i=0;
-	istop=210;
-	set_left(MOTOR_DEFAULT_SPEED,MOTOR_DEFAULT_SPEED);
-}
-
-void startRight(){
-	i=0;
-	istop=260;
-	set_right(MOTOR_DEFAULT_SPEED,MOTOR_DEFAULT_SPEED);
-}
-
 void setLeftCalSpeed(float c) {
 	MP._left_side._calibrate_speed 	= c;
 }
-
 void setRightCalSpeed(float c) {
 	MP._right_side._calibrate_speed = c;
 }
-
 void platformPID(float left, float right) {
 	MP._Lspeed = MP._originalLspeed + left;
 	MP._Rspeed = MP._originalLspeed + right;
 }
-
 void setChange(int value) {
 	change = value;
 }
-
 uint8_t getMotorState(void) {
 	return MP._state;
 }
-
 int isComplete(void){
 	return orderComplete;
 }
-
-
 void rotaryDriverStart(uint16_t ticks) {
 	rotaryDriverReset();
 	set_forward(MP._originalLspeed, MP._originalLspeed);
@@ -400,46 +403,72 @@ void rotaryDriverStart(uint16_t ticks) {
 	MP.rotary_driver_target_ticks = ticks;
 	setChange(1);
 }
-
 void rotaryDriverStartCM(uint16_t cm) {
 	rotaryDriverReset();
-	set_forward(MP._originalLspeed, MP._originalLspeed);
+	set_forward(MOTOR_DEFAULT_TURN_SPEED, MOTOR_DEFAULT_TURN_SPEED);
 	MP._rotary_driver_state |= ROTARY_DRIVER_ACTIVE;
 	MP.rotary_driver_target_ticks = 9.71*(cm)-37.47;
 	setChange(1);
 }
-
 uint8_t rotaryDriverDone(void) {
 	if(MP.rotary_driver_ticks >= MP.rotary_driver_target_ticks) {
 		return 1;
 	}
 	return 0;
 }
-
 void rotaryDriverStop(void) {
 	rotaryDriverCancel();
 }
-
 void rotaryDriverCancel(void) {
 	MP._rotary_driver_state &= ~(ROTARY_DRIVER_ACTIVE);
 }
-
 void rotaryDriverReset(void) {
 	MP._rotary_driver_state = 0;
 	MP.rotary_driver_ticks = 0;
 	MP.rotary_driver_target_ticks = 0;
 }
-
 void rotaryDriverTick(void) {
 	if(MP._rotary_driver_state&ROTARY_DRIVER_ACTIVE) {
 		MP.rotary_driver_ticks++;
 	}
 }
-
 float cmtoticks(float cm) {
 	return (9.71*(cm)-37.47);
 }
-
+void setOrderLengthCM(uint16_t length) {
+	MP.order_length = length;
+}
+void changePlatformHeading(uint8_t heading) {
+	MP.heading_state = heading;
+}
+void movePlatformCM(uint16_t length) {
+	switch(MP.heading_state) {
+		case(PLATFORM_HEADING_XNEG):
+				MP.x_pos -= length;
+				break;
+		case(PLATFORM_HEADING_XPOS):
+				MP.x_pos += length;
+				break;
+		case(PLATFORM_HEADING_YNEG):
+				MP.y_pos -= length;
+				break;
+		case(PLATFORM_HEADING_YPOS):
+				MP.y_pos += length;
+				break;
+	}
+}
+uint8_t isPlatformMovingIntoWall(void){
+	if((MP.x_pos >= MP.x_max) && (MP.heading_state == PLATFORM_HEADING_XPOS)) {
+		return 1;
+	}
+	if ((MP.x_pos <= 0) && (MP.heading_state == PLATFORM_HEADING_XNEG)) {
+		return 1;
+	}
+	return 0;
+}
+uint8_t isInOuterLane(void){
+	return 0;
+}
 void InitializeLEDs()
 {
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
@@ -452,31 +481,3 @@ void InitializeLEDs()
 
     GPIO_WriteBit(GPIOD, GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
 }
-
-
-/*
-				if(getOrderTargetTicks() <= 290) {
-					if(getOrderCurrentTicks() >= getOrderTargetTicks()) {
-						set_stop();
-						deactivatePID();
-						setOrderDone();
-					}
-				} else {
-					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.6) {
-						if((!checkBackRight() && !checkFrontRight()) || !checkBackLeft()) {
-							set_stop();
-							rotaryDriverStartCM(10);
-						}
-					}
-					if(getOrderCurrentTicks() >= getOrderTargetTicks()*0.8) {
-						if(!checkRightWall()) {
-							if(!checkBackRight()) {
-								//deactivatePID();
-								set_stop();
-								rotaryDriverStartCM(1);
-							}
-						}
-					} else {
-						activePID();
-					}
-					*/

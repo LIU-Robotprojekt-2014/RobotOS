@@ -43,6 +43,13 @@ uint8_t checkOrderDone(void) {
 	return 0;
 }
 
+uint8_t checkOrderActive(void) {
+	if(RobotOrder.state&ORDER_ACTIVE) {
+		return 1;
+	}
+	return 0;
+}
+
 void resetOrder(void) {
 	RobotOrder.current_ticks 	= 0;
 	RobotOrder.target_ticks		= 0;

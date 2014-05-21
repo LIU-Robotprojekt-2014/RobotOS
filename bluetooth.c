@@ -12,6 +12,7 @@
 #include "platform.h"
 #include "order.h"
 #include "sensors.h"
+#include "PID.h"
 
 Bluetoothunit BT;
 
@@ -175,16 +176,16 @@ void parse_M_command(void) {
 
 			if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
 				//set_forward(100,100);
-				startForward(1000, 0, 0);
+				//startForward(1000, 0, 0);
 				_send_package("Moving forward, Sire!\n", 22);
 			} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
-				set_backward(100,100);
+				//set_backward(100,100);
 				_send_package("Moving backward, Sire!\n", 23);
 			} else if (strncmp(&(BT._package[4]), "left", 4) == 0) {
-				startLeft();
+				//startLeft();
 				_send_package("Turning left, Sire!\n", 20);
 			} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
-				startRight();
+				//startRight();
 				_send_package("Turning right, Sire!\n", 21);
 			} else {
 				set_stop();
@@ -197,6 +198,11 @@ void parse_M_command(void) {
 }
 
 void parse_C_command(void) {
+
+	if(checkOrderActive()) {
+		return 0;
+	}
+
 	uint16_t dl_pos[2] = {0,0};
 
 	char a1[6] = {0};
@@ -206,8 +212,10 @@ void parse_C_command(void) {
 	uint16_t i 				= 0;
 	uint16_t distance 		= 0;
 	uint16_t lenght_to_wall = 0;
-	uint8_t x_ing 			= 0;
 	uint16_t order 			= 0;
+	float Kp = 0;
+	float Ki = 0;
+	float Kd = 0;
 
 	if(BT._package[1] == '0') {
 		if(BT._package[2] == '1') {
@@ -253,9 +261,9 @@ void parse_C_command(void) {
 				if(distance == 230) {
 					distance = 130;
 				}*/
-
+				setOrderLengthCM(distance/10);
 				setOrderTargetTicks(9.71*(distance/10)-37.47);
-				setOrderLengthToWall(lenght_to_wall/10);
+				setOrderLengthToWall(lenght_to_wall/10.0);
 				setOrderTypeForward();
 				setOrderID(order);
 
@@ -276,24 +284,27 @@ void parse_C_command(void) {
 				return;
 			}
 
-			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
-			memcpy(a3, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
-			//x_ing = atoi(a1);
-			order = atoi(a3);
-
-			if(strncmp(&(BT._package[4]), "forward", 7) == 0) {
-				x_ing = 2;
-			} else if (strncmp(&(BT._package[4]), "backward", 8) == 0) {
-				x_ing = 4;
-			} else if (strncmp(&(BT._package[4]), "left", 4) == 0) {
-				x_ing = 3;
-			} else if (strncmp(&(BT._package[4]), "right", 5) == 0) {
-				x_ing = 1;
-			} else {
-				acknowledge_order(0);
+			for(i = dl_pos[0]+1; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[1] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
 			}
-			//startCrossing(x_ing, order);
-			BT._current_order = (uint16_t)a3;
+
+			if(dl_pos[1] == 0) {
+				return;
+			}
+
+			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
+			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
+			memcpy(a3, &(BT._package[dl_pos[1]+1]), strlen(&(BT._package[dl_pos[1]+1])));
+
+			Kp = atoff(a1);
+			Ki = atoff(a2);
+			Kd = atoff(a3);
+			setPIDParameters(Kp,Ki,Kd);
+
 		} else if (BT._package[2] == '3') {
 			for(i = 4; i < BLUETOOTH_BUFFER_SIZE; i++) {
 				if(BT._package[i] == ':') {
@@ -320,6 +331,72 @@ void parse_C_command(void) {
 				acknowledge_order(0);
 			}
 			setOrderID(order);
+		} else if (BT._package[2] == '4') {
+			for(i = 4; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[0] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[0] == 0) {
+				return;
+			}
+
+			for(i = dl_pos[0]+1; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[1] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[1] == 0) {
+				return;
+			}
+
+			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
+			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
+			memcpy(a3, &(BT._package[dl_pos[1]+1]), strlen(&(BT._package[dl_pos[1]+1])));
+
+			Kp = atoff(a1);
+			Ki = atoff(a2);
+			Kd = atoff(a3);
+			setPIDWideParameters(Kp,Ki,Kd);
+		} else if (BT._package[2] == '5') {
+			for(i = 4; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[0] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[0] == 0) {
+				return;
+			}
+
+			for(i = dl_pos[0]+1; i < BLUETOOTH_BUFFER_SIZE; i++) {
+				if(BT._package[i] == ':') {
+					dl_pos[1] = i;
+					BT._package[i] = 0x00;
+					break;
+				}
+			}
+
+			if(dl_pos[1] == 0) {
+				return;
+			}
+
+			memcpy(a1, &(BT._package[4]), strlen(&(BT._package[4])));
+			memcpy(a2, &(BT._package[dl_pos[0]+1]), strlen(&(BT._package[dl_pos[0]+1])));
+			memcpy(a3, &(BT._package[dl_pos[1]+1]), strlen(&(BT._package[dl_pos[1]+1])));
+
+			Kp = atoff(a1);
+			Ki = atoff(a2);
+			Kd = atoff(a3);
+			setPIDSmallParameters(Kp,Ki,Kd);
 		}
 	}
 }

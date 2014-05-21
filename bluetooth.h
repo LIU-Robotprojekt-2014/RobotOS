@@ -17,7 +17,7 @@
 
 #define BT_ORDER_DELAY_ACTIVE 0x01
 #define BT_ORDER_DELAY_DONE 0x02
-#define BT_ORDER_DELAY_MS 400
+#define BT_ORDER_DELAY_MS 500
 
 typedef struct BluetoothUnit {
    uint32_t _baudrate;

@@ -26,6 +26,7 @@ void setOrderID(uint16_t order);
 void setOrderTargetTicks(uint16_t len);
 uint16_t getOrderID(void);
 uint8_t checkOrderDone(void);
+uint8_t checkOrderActive(void);
 void resetOrder(void);
 void setOrderDone(void);
 void setOrderActive(void);

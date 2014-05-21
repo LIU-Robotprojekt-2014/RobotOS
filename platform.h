@@ -16,19 +16,27 @@
 #define MOTOR_DEFAULT_SPEED 100
 #define MOTOR_DEFAULT_TURN_SPEED 100
 
+#define PLATFORM_PID_THRESHOLD 30
+
 //TODO: RECALIBRATE (GO LOWER)
 //#define MOTOR_LEFT_TICKS 255
 //#define MOTOR_RIGHT_TICKS 270
 //#define MOTOR_LEFT_TICKS 258
 //#define MOTOR_RIGHT_TICKS 290
-#define MOTOR_LEFT_TICKS 250
-#define MOTOR_RIGHT_TICKS 250
+#define MOTOR_LEFT_TICKS 235
+#define MOTOR_RIGHT_TICKS 256
 
 #define PLATFORM_STOP 0
 #define PLATFORM_FORWARD 1
 #define PLATFORM_BACKWARD 2
 #define PLATFORM_LEFT 3
 #define PLATFORM_RIGHT 4
+
+//Platform moving states
+#define PLATFORM_HEADING_XPOS 1
+#define PLATFORM_HEADING_XNEG 2
+#define PLATFORM_HEADING_YPOS 3
+#define PLATFORM_HEADING_YNEG 4
 
 #define ROTARY_DRIVER_ACTIVE 0x01
 #define ROTARY_DRIVER_NODE_TICK 80
@@ -54,9 +62,18 @@ typedef struct MotorPlatform {
    uint16_t rotary_driver_ticks;
    uint16_t rotary_driver_target_ticks;
 
+   uint16_t order_length;
+
    uint8_t order_state;
    uint16_t current_order; //Set to 0 when done
    uint16_t completed_order;
+
+   //Software heading
+   uint16_t x_pos;
+   uint16_t y_pos;
+   uint16_t x_max;
+   uint16_t y_max;
+   uint8_t heading_state;
 
 } MotorPlatform;
 
@@ -88,9 +105,6 @@ void orderStartForward(void);
 void orderStartLeftTurn(void);
 void orderStartRightTurn(void);
 
-void startLeft();
-void startRight();
-void startForward(int distance, float distanceToWall, int ordNr);
 void setLeftCalSpeed( float c);
 void setRightCalSpeed( float c);
 
@@ -112,5 +126,11 @@ void rotaryDriverTick(void);
 void InitializeLEDs();
 
 float cmtoticks(float cm);
+
+void setOrderLengthCM(uint16_t length);
+void changePlatformHeading(uint8_t heading);
+void movePlatformCM(uint16_t length);
+uint8_t isPlatformMovingIntoWall(void);
+uint8_t isInOuterLane(void);
 
 #endif

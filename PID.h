@@ -11,11 +11,11 @@
 #define WALL_DISTANCE_MINIMUM 1
 #define WALL_DISTANCE_MAXIMUM 9999
 
-#define PID_LOWER_LIMIT -95
-#define PID_UPPER_LIMIT 95
+#define PID_LOWER_LIMIT -60
+#define PID_UPPER_LIMIT 60
 
 #define PID_SAMPLE_TIME 0.01
-#define PID_MINIMUM_ERROR 1
+#define PID_MINIMUM_ERROR 1.0
 
 #define PID_ANGULAR_SENSOR_DIST 9
 
@@ -35,8 +35,15 @@ typedef struct PID {
 	uint16_t _timer_count;
 	uint16_t values_to_mean;
 	float output;
-
+	uint8_t lost_found_state;
 } PID;
+
+typedef struct PID_Params {
+	float _Kp;
+	float _Ki;
+	float _Kd;
+} PID_Params;
+
 
 void init_PID(void);
 void _init_PID_Angular(void);
@@ -51,5 +58,11 @@ void activePID(void);
 void deactivatePID(void);
 int16_t getPIDOutput(void);
 void resetPIDIntergrator(void);
+
+void setPIDParameters(float Kp,float Ki, float Kd);
+void setPIDWideParameters(float Kp,float Ki, float Kd);
+void setPIDSmallParameters(float Kp,float Ki, float Kd);
+void setPIDWide(void);
+void setPIDSmall(void);
 
 #endif
