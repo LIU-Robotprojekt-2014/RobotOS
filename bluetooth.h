@@ -67,6 +67,6 @@ void setOrderDelay(uint16_t ms);
 void tickOrderDelay(void);
 void resetOrderDelay(void);
 
-
+uint8_t send_xy(char* s1, char* s2);
 
 #endif

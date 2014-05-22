@@ -27,8 +27,8 @@
 //#define MOTOR_RIGHT_TICKS 270
 //#define MOTOR_LEFT_TICKS 258
 //#define MOTOR_RIGHT_TICKS 290
-#define MOTOR_LEFT_TICKS 235
-#define MOTOR_RIGHT_TICKS 230
+#define MOTOR_LEFT_TICKS 240
+#define MOTOR_RIGHT_TICKS 234
 //Good right turn 246, 240 for "under turn"
 
 #define PLATFORM_STOP 0
@@ -36,6 +36,8 @@
 #define PLATFORM_BACKWARD 2
 #define PLATFORM_LEFT 3
 #define PLATFORM_RIGHT 4
+
+#define PLATFORM_PERIOD_PERCENTAGE 10
 
 //Platform moving states
 #define PLATFORM_HEADING_XPOS 1
@@ -142,6 +144,10 @@ void setOrderLengthCM(uint16_t length);
 void changePlatformHeading(uint8_t heading);
 void movePlatformCM(uint16_t length);
 uint8_t isPlatformMovingIntoWall(void);
+uint8_t isPlatformMovingIntoRightWall(void);
+uint8_t isPlatformMovingIntoLeftWall(void);
+uint8_t isPlatformMovingIntoUpperWall(void);
+uint8_t isPlatformMovingIntoLowerWall(void);
 uint8_t isInOuterLane(void);
 
 void platformFineAdjust(void);

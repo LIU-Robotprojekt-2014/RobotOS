@@ -125,9 +125,9 @@ void init_platform(void) {
 	//Heading
 	MP.heading_state = PLATFORM_HEADING_YNEG;
 	MP.x_max 		 = 664; //682
-	MP.y_max 		 = 308;
-	MP.x_pos 		 = 0;
-	MP.y_pos 		 = 154;
+	MP.y_max 		 = 304;
+	MP.x_pos 		 = 1;
+	MP.y_pos 		 = 151;
 
 	//Adjust
 	MP.adjust_state = 0;
@@ -140,7 +140,7 @@ void init_platform(void) {
 	/* TIM Configuration */
 	TIM_Config();
 	/* PWM Configuration */
-	PWM_Config(4000);
+	PWM_Config(1000);
 
 }
 
@@ -201,9 +201,9 @@ void process_platform() {
 								set_stop();
 								deactivatePID();
 								if(getOrderLengthToWall() >= 7.0) {
-									rotaryDriverStartCM(7);
+									rotaryDriverStartCM(8);
 								} else {
-									rotaryDriverStartCM(9);
+									rotaryDriverStartCM(10);
 								}
 
 							}
@@ -307,25 +307,25 @@ int set_stop() {
 }
 void _go_forward(void) {
 	_stop();
-	PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_FORWARD ,PLATFORM_PERIOD_PERCENTAGE*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,PLATFORM_PERIOD_PERCENTAGE*MP._Rspeed*MP._right_side._calibrate_speed);
 }
 void _go_backward(void) {
 	_stop();
-	PWM_SetDC(PLATFORM_LEFT_BACKWARD,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(PLATFORM_RIGHT_BACKWARD,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_BACKWARD,PLATFORM_PERIOD_PERCENTAGE*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_BACKWARD,PLATFORM_PERIOD_PERCENTAGE*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
 void _turn_left(void) {
 	_stop();
-	PWM_SetDC(PLATFORM_LEFT_BACKWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_BACKWARD ,PLATFORM_PERIOD_PERCENTAGE*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_FORWARD ,PLATFORM_PERIOD_PERCENTAGE*MP._Rspeed*MP._right_side._calibrate_speed);
 
 }
 void _turn_right(void) {
 	_stop();
-	PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MP._Lspeed*MP._left_side._calibrate_speed);
-	PWM_SetDC(PLATFORM_RIGHT_BACKWARD ,40*MP._Rspeed*MP._right_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_LEFT_FORWARD ,PLATFORM_PERIOD_PERCENTAGE*MP._Lspeed*MP._left_side._calibrate_speed);
+	PWM_SetDC(PLATFORM_RIGHT_BACKWARD ,PLATFORM_PERIOD_PERCENTAGE*MP._Rspeed*MP._right_side._calibrate_speed);
 }
 void _stop(void) {
 	PWM_SetDC(1,0);
@@ -338,9 +338,21 @@ void orderStartForward(void) {
 	resetPIDIntergrator();
 
 	movePlatformCM(MP.order_length);
-
+	/*
 	if(isPlatformMovingIntoWall()) {
-		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(5));
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(7));
+	}
+	*/
+	send_xy(toArray(MP.x_pos), toArray(MP.y_pos));
+
+	if(isPlatformMovingIntoRightWall()) {
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(6));
+	} else if (isPlatformMovingIntoLeftWall()) {
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(9));
+	} else if (isPlatformMovingIntoUpperWall()) {
+		setOrderTargetTicks(getOrderTargetTicks()+cmtoticks(5));
+	} else if (isPlatformMovingIntoLowerWall()) {
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(1));
 	}
 
 	if(getOrderTargetTicks() >= cmtoticks(PLATFORM_PID_THRESHOLD)) {
@@ -356,6 +368,7 @@ void orderStartForward(void) {
 
 	if(getOrderLengthToWall() < 8.0 || MP.order_length < 30) {
 		set_forward(MOTOR_REDUCED_SPEED, MOTOR_REDUCED_SPEED);
+		setOrderTargetTicks(getOrderTargetTicks()+cmtoticks(6));
 	} else {
 		set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 	}
@@ -515,6 +528,36 @@ uint8_t isPlatformMovingIntoWall(void){
 	}
 	return 0;
 }
+
+uint8_t isPlatformMovingIntoRightWall(void){
+	if((MP.x_pos >= MP.x_max) && (MP.heading_state == PLATFORM_HEADING_XPOS)) {
+			return 1;
+	}
+	return 0;
+}
+
+uint8_t isPlatformMovingIntoLeftWall(void){
+	if ((MP.x_pos <= 1) && (MP.heading_state == PLATFORM_HEADING_XNEG)) {
+			return 1;
+	}
+	return 0;
+}
+
+
+uint8_t isPlatformMovingIntoUpperWall(void){
+	if((MP.y_pos >= MP.y_max) && (MP.heading_state == PLATFORM_HEADING_YPOS)) {
+		return 1;
+	}
+	return 0;
+}
+
+uint8_t isPlatformMovingIntoLowerWall(void){
+	if((MP.y_pos <= 1) && (MP.heading_state == PLATFORM_HEADING_YNEG)) {
+		return 1;
+	}
+	return 0;
+}
+
 uint8_t isInOuterLane(void){
 	return 0;
 }
@@ -538,12 +581,12 @@ void platformFineAdjust(void) {
 				diff = getIRSensorReadingCM(IR_SENSOR_RF)-getIRSensorReadingCM(IR_SENSOR_RB);
 				if(diff >= MOTOR_ADJUSTMENT_CM ) {
 					_stop();
-					PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._left_side._calibrate_speed);
-					PWM_SetDC(PLATFORM_RIGHT_BACKWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._right_side._calibrate_speed);
+					PWM_SetDC(PLATFORM_LEFT_FORWARD ,PLATFORM_PERIOD_PERCENTAGE*MOTOR_ADJUSTMENT_SPEED*MP._left_side._calibrate_speed);
+					PWM_SetDC(PLATFORM_RIGHT_BACKWARD ,PLATFORM_PERIOD_PERCENTAGE*MOTOR_ADJUSTMENT_SPEED*MP._right_side._calibrate_speed);
 				} else if ( diff <= -MOTOR_ADJUSTMENT_CM) {
 					_stop();
-					PWM_SetDC(PLATFORM_LEFT_BACKWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._left_side._calibrate_speed);
-					PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._right_side._calibrate_speed);
+					PWM_SetDC(PLATFORM_LEFT_BACKWARD ,PLATFORM_PERIOD_PERCENTAGE*MOTOR_ADJUSTMENT_SPEED*MP._left_side._calibrate_speed);
+					PWM_SetDC(PLATFORM_RIGHT_FORWARD ,PLATFORM_PERIOD_PERCENTAGE*MOTOR_ADJUSTMENT_SPEED*MP._right_side._calibrate_speed);
 				} else {
 					break;
 				}

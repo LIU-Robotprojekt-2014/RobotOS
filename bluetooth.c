@@ -443,6 +443,28 @@ uint8_t send_ir_sensors(char* s1, char* s2, char* s3, char* s4) {
 	return BT_TX_BUSY;
 }
 
+uint8_t send_xy(char* s1, char* s2) {
+	char str1[] = {"S03|"};
+	char delim[] = {":"};
+	char str3[] = {"\n"};
+	char * new_str ;
+	if((new_str = malloc(strlen(str1)+strlen(s1)+strlen(delim)+strlen(s2)+strlen(str3)+1)) != NULL){
+		new_str[0] = '\0';   // ensures the memory is an empty string
+		strcat(new_str,str1);
+		strcat(new_str,s1);
+		strcat(new_str,delim);
+		strcat(new_str,s2);
+		strcat(new_str,str3);
+	}
+	if(_send_package(new_str, strlen(new_str)) != BT_TX_BUSY) {
+		free(new_str);
+		return 0;
+	}
+	free(new_str);
+	return BT_TX_BUSY;
+}
+
+
 uint8_t send_rotary(char* msg) {
 	char str1[] = {"S02|"};
 	char str3[] = {"\n"};
