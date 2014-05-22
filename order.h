@@ -36,6 +36,7 @@ float getOrderLengthToWall(void);
 uint8_t getOrderState(void);
 uint16_t getOrderTargetTicks(void);
 uint16_t getOrderCurrentTicks(void);
+void setOrderCurrentTicks(uint16_t ticks);
 void tickOrder(void);
 
 

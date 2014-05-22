@@ -57,13 +57,13 @@ void init_PID(void) {
 	PID_Motor.output			= 0;
 	PID_Motor.values_to_mean 	= 0;
 
-	PID_P_Small._Kp = 8;
+	PID_P_Small._Kp = 12; //12
 	PID_P_Small._Ki = 0.1;
 	PID_P_Small._Kd = 0.1;
 
-	PID_P_Wide._Kp = 14;
+	PID_P_Wide._Kp = 15;
 	PID_P_Wide._Ki = 0.1;
-	PID_P_Wide._Kd = 0;
+	PID_P_Wide._Kd = 1;
 
 	_init_PID_Angular();
 
@@ -159,31 +159,33 @@ void calculatePID(void) {
 
 	if(checkFrontRight()) {
 		PID_Motor._input = getIRSensorReadingCM(IR_SENSOR_RF);
+		PID_Motor._error = PID_Motor._value - PID_Motor._input;
+
+			if(abs(PID_Motor._error) < PID_MINIMUM_ERROR) {
+				PID_Motor._error = 0;
+			}
+
+			PID_Motor._proportional	= PID_Motor._error;
+			PID_Motor._integrator 	+= PID_Motor._error*PID_SAMPLE_TIME;
+			PID_Motor._derivator 	= (PID_Motor._error-PID_Motor._previous_error)/PID_SAMPLE_TIME;
+
+			PID_Motor.output = PID_Motor._Kp*PID_Motor._proportional;
+			PID_Motor.output += PID_Motor._Ki*PID_Motor._integrator;
+			PID_Motor.output += PID_Motor._Kd*PID_Motor._derivator;
+
+			if(PID_Motor.output >= PID_UPPER_LIMIT) {
+				PID_Motor.output = PID_UPPER_LIMIT;
+			} else if(PID_Motor.output <= PID_LOWER_LIMIT) {
+				PID_Motor.output = PID_LOWER_LIMIT;
+			}
+
+			PID_Motor._previous_error = PID_Motor._error;
 	} else {
-		PID_Motor._input = PID_Motor._value;
+		PID_Motor.output = 0;
+		//return;
 	}
 
-	PID_Motor._error = PID_Motor._value - PID_Motor._input;
 
-	if(abs(PID_Motor._error) < PID_MINIMUM_ERROR) {
-		PID_Motor._error = 0;
-	}
-
-	PID_Motor._proportional	= PID_Motor._error;
-	PID_Motor._integrator 	+= PID_Motor._error*PID_SAMPLE_TIME;
-	PID_Motor._derivator 	= (PID_Motor._error-PID_Motor._previous_error)/PID_SAMPLE_TIME;
-
-	PID_Motor.output = PID_Motor._Kp*PID_Motor._proportional;
-	PID_Motor.output += PID_Motor._Ki*PID_Motor._integrator;
-	PID_Motor.output += PID_Motor._Kd*PID_Motor._derivator;
-
-	if(PID_Motor.output >= PID_UPPER_LIMIT) {
-		PID_Motor.output = PID_UPPER_LIMIT;
-	} else if(PID_Motor.output <= PID_LOWER_LIMIT) {
-		PID_Motor.output = PID_LOWER_LIMIT;
-	}
-
-	PID_Motor._previous_error = PID_Motor._error;
 }
 
 
@@ -295,6 +297,7 @@ void TIM2_IRQHandler(void) {
 		}
 		*/
 		tickOrderDelay();
+		//tickCurrentDelayMS();
 
 		//Take sample every 10ms
 		if(PID_Motor._state&PID_ACTIVE) {

@@ -315,21 +315,21 @@ uint8_t checkBackLeft(void) {
 	return 0;
 }
 
-#ifdef DISABLE_LF
+/*
 uint8_t checkLeftWall(void) {
 	if((S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
 		return 1;
 	}
 	return 0;
 }
-#else
+*/
+
 uint8_t checkLeftWall(void) {
 	if((S.ir_state&IR_SENSOR_GOT_WALL_LF)&&(S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
 		return 1;
 	}
 	return 0;
 }
-#endif
 
 uint8_t checkRightWall(void) {
 	if((S.ir_state&IR_SENSOR_GOT_WALL_RF)&&(S.ir_state&IR_SENSOR_GOT_WALL_RB)) {

@@ -15,6 +15,10 @@
 
 #define MOTOR_DEFAULT_SPEED 100
 #define MOTOR_DEFAULT_TURN_SPEED 100
+#define MOTOR_REDUCED_SPEED 85
+#define MOTOR_ADJUSTMENT_SPEED 30
+
+#define MOTOR_ADJUSTMENT_CM 1
 
 #define PLATFORM_PID_THRESHOLD 30
 
@@ -24,7 +28,8 @@
 //#define MOTOR_LEFT_TICKS 258
 //#define MOTOR_RIGHT_TICKS 290
 #define MOTOR_LEFT_TICKS 235
-#define MOTOR_RIGHT_TICKS 256
+#define MOTOR_RIGHT_TICKS 230
+//Good right turn 246, 240 for "under turn"
 
 #define PLATFORM_STOP 0
 #define PLATFORM_FORWARD 1
@@ -40,6 +45,8 @@
 
 #define ROTARY_DRIVER_ACTIVE 0x01
 #define ROTARY_DRIVER_NODE_TICK 80
+
+#define PLATFORM_ADJUST_DONE 0x01
 
 typedef struct Motor {
 	float _calibrate_speed;
@@ -75,12 +82,16 @@ typedef struct MotorPlatform {
    uint16_t y_max;
    uint8_t heading_state;
 
+   //Adjust
+   uint8_t adjust_state;
+
 } MotorPlatform;
 
 
 int orderComplete;
 int orderNr;
 int timer;
+int currentDelayMS;
 
 void TIM_Config(void);
 void PWM_Config(int period);
@@ -132,5 +143,10 @@ void changePlatformHeading(uint8_t heading);
 void movePlatformCM(uint16_t length);
 uint8_t isPlatformMovingIntoWall(void);
 uint8_t isInOuterLane(void);
+
+void platformFineAdjust(void);
+
+void platformDelay(int targetDelayMS);
+void tickCurrentDelayMS();
 
 #endif

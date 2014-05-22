@@ -60,6 +60,7 @@ void resetOrder(void) {
 }
 
 void setOrderDone(void) {
+	platformFineAdjust();
 	RobotOrder.state |= ORDER_DONE;
 }
 
@@ -89,6 +90,10 @@ uint16_t getOrderTargetTicks(void) {
 
 uint16_t getOrderCurrentTicks(void) {
 	return RobotOrder.current_ticks;
+}
+
+void setOrderCurrentTicks(uint16_t ticks) {
+	RobotOrder.current_ticks = ticks;
 }
 
 void tickOrder(void) {
