@@ -251,16 +251,7 @@ void parse_C_command(void) {
 			lenght_to_wall  = atoi(a2);
 			order	 		= atoi(a3);
 			if(distance >= 1 && distance <= 9999) {
-				//startForward(distance, lenght_to_wall, order);
-				//BT._current_order = (uint16_t)a3;
-				//acknowledge_order(a3);
 				resetOrder();
-
-				//TODO: Crossing quick fix
-				/*
-				if(distance == 230) {
-					distance = 130;
-				}*/
 				setOrderLengthCM(distance/10);
 				setOrderTargetTicks(9.71*(distance/10)-37.47);
 				setOrderLengthToWall(lenght_to_wall/10.0);

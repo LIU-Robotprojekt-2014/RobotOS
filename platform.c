@@ -132,7 +132,6 @@ void init_platform(void) {
 	//Adjust
 	MP.adjust_state = 0;
 
-	istop=0;
 	orderComplete=0;
 	timer=0;
 
@@ -336,13 +335,7 @@ void _stop(void) {
 void orderStartForward(void) {
 	setPIDValue(getOrderLengthToWall()+IR_SENSOR_OFFSET);
 	resetPIDIntergrator();
-
 	movePlatformCM(MP.order_length);
-	/*
-	if(isPlatformMovingIntoWall()) {
-		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(7));
-	}
-	*/
 	//send_xy(toArray(MP.x_pos), toArray(MP.y_pos));
 
 	if(isPlatformMovingIntoRightWall()) {
@@ -426,31 +419,6 @@ void platformPID(float left, float right) {
 }
 void setChange(int value) {
 	change = value;
-	/*
-	if(change==1){
-		switch(MP._state){
-			case(PLATFORM_STOP):
-				_stop();
-				break;
-			case(PLATFORM_FORWARD):
-				_go_forward();
-				break;
-			case(PLATFORM_BACKWARD):
-				_go_backward();
-				break;
-			case(PLATFORM_LEFT):
-				_turn_left();
-				break;
-			case(PLATFORM_RIGHT):
-				_turn_right();
-				break;
-			default:
-				_stop();
-				break;
-		}
-		change=0;
-	}
-	*/
 }
 uint8_t getMotorState(void) {
 	return MP._state;
@@ -601,29 +569,6 @@ void platformFineAdjust(void) {
 		}
 
 	}
-	/*
-	else if(checkLeftWall()) {
-		_stop();
-		process_sensors();
-		diff = getIRSensorReadingCM(IR_SENSOR_LF)-getIRSensorReadingCM(IR_SENSOR_LB);
-		while(diff < -MOTOR_ADJUSTMENT_CM || diff > MOTOR_ADJUSTMENT_CM) {
-			process_sensors();
-			if(!checkLeftWall()) {
-				break;
-			}
-			diff = getIRSensorReadingCM(IR_SENSOR_RF)-getIRSensorReadingCM(IR_SENSOR_RB);
-			if(diff > MOTOR_ADJUSTMENT_CM ) {
-				PWM_SetDC(PLATFORM_LEFT_BACKWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._left_side._calibrate_speed);
-				PWM_SetDC(PLATFORM_RIGHT_FORWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._right_side._calibrate_speed);
-			} else if( diff < -MOTOR_ADJUSTMENT_CM) {
-				PWM_SetDC(PLATFORM_LEFT_FORWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._left_side._calibrate_speed);
-				PWM_SetDC(PLATFORM_RIGHT_BACKWARD ,40*MOTOR_ADJUSTMENT_SPEED*MP._right_side._calibrate_speed);
-			}
-		}
-		_stop();
-	}
-	*/
-
 }
 
 void InitializeLEDs()
@@ -637,15 +582,4 @@ void InitializeLEDs()
     GPIO_Init(GPIOD, &gpioStructure);
 
     GPIO_WriteBit(GPIOD, GPIO_Pin_12 | GPIO_Pin_13, Bit_RESET);
-}
-
-void tickCurrentDelayMS(){
-	currentDelayMS++;
-}
-
-void platformDelay(int targetDelayMS){
-		currentDelayMS=0;
-		while(currentDelayMS < targetDelayMS){
-
-		}
 }

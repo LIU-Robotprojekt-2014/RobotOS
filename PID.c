@@ -14,38 +14,17 @@
 #include <math.h>
 
 PID PID_Motor;
-PID PID_Angular;
-PID PID_Distance;
-
-float PID_Output_Sum = 0;
 
 PID_Params PID_P_Small;
 PID_Params PID_P_Wide;
 
 void init_PID(void) {
-	/*
-	 * "Good"
-	 * P = 2
-	 * I = 0.01
-	 * D = 5
-	 */
-
-
 	PID_Motor._input			= 0;
 	PID_Motor._value 			= 20;
 	PID_Motor._interval 		= 10;
-#ifdef PID_ANGULAR
-	PID_Motor._Kp 				= 6;
-	PID_Motor._Ki 				= 0;
-	PID_Motor._Kd 				= 10;
-#else
-	//PID_Motor._Kp 				= 15;
-	//PID_Motor._Ki 				= 1;
-	//PID_Motor._Kd 				= 15;
 	PID_Motor._Kp 				= 10;
 	PID_Motor._Ki 				= 1;
 	PID_Motor._Kd 				= 0;
-#endif
 
 	PID_Motor._error 			= 0;
 	PID_Motor._previous_error 	= 0;
@@ -57,50 +36,21 @@ void init_PID(void) {
 	PID_Motor.output			= 0;
 	PID_Motor.values_to_mean 	= 0;
 
-	PID_P_Small._Kp = 6; //12
+	PID_P_Small._Kp = 6;
 	PID_P_Small._Ki = 0.1;
 	PID_P_Small._Kd = 0.1;
 
 	PID_P_Wide._Kp = 15;
 	PID_P_Wide._Ki = 0.1;
 	PID_P_Wide._Kd = 1;
-
-	_init_PID_Angular();
-
 	setupTimer(PID_Motor._interval);
 }
-
-void _init_PID_Angular(void) {
-	PID_Angular._input			= 0;
-	PID_Angular._value 			= 0;
-	PID_Angular._interval 		= 10;
-	PID_Angular._Kp 			= 10;
-	PID_Angular._Ki 			= 1;
-	PID_Angular._Kd 			= 1;
-	PID_Angular._error 			= 0;
-	PID_Angular._previous_error	= 0;
-	PID_Angular._proportional 	= 0;
-	PID_Angular._integrator		= 0;
-	PID_Angular._derivator 		= 0;
-	PID_Angular._state 			= 0;
-	PID_Angular._timer_count 	= 0;
-	PID_Angular.output			= 0;
-	PID_Angular.values_to_mean 	= 0;
-}
-void _init_PID_Distance(void) {
-
-}
-
 
 void process_PID(void) {
 	if(PID_Motor._state&PID_ACTIVE) {
 		if(PID_Motor._state&PID_TIMER_DONE) {
 			PID_Motor._state &= ~(PID_TIMER_DONE);
-
-			//calculatePIDAngular();
-
 			calculatePID();
-
 			if(PID_Motor.output > 0){
 				platformPID(-PID_Motor.output,0);
 			} else if(PID_Motor.output < 0){
@@ -110,7 +60,6 @@ void process_PID(void) {
 			setChange(1);
 			resetInput();
 			PID_Motor.output = 0;
-			PID_Angular.output = 0;
 		}
 
 	}
@@ -188,40 +137,6 @@ void calculatePID(void) {
 
 }
 
-
-void calculatePIDAngular(void) {
-	if(PID_Angular._state&PID_RESET_INTEGRATOR) {
-		PID_Angular._state &= ~(PID_RESET_INTEGRATOR);
-		PID_Angular._integrator = 0;
-	}
-
-	//PID_Angular._input /= PID_Angular.values_to_mean;
-	PID_Angular._error = getIRSensorReading(IR_SENSOR_RF)-getIRSensorReading(IR_SENSOR_RB);
-	//PID_Angular._error = LatestReading[IR_SENSOR_RB]-LatestReading[IR_SENSOR_RF];
-	//PID_Angular._error = PID_Angular._value - PID_Angular._input;
-
-	if(abs(PID_Angular._error) < 2) {
-		PID_Angular._error = 0;
-	}
-
-	PID_Angular._proportional	= PID_Angular._error;
-	PID_Angular._integrator 	+= PID_Angular._error*PID_SAMPLE_TIME;
-	PID_Angular._derivator 	= (PID_Angular._error-PID_Angular._previous_error)/PID_SAMPLE_TIME;
-
-	PID_Angular.output = PID_Angular._Kp*PID_Angular._proportional;
-	PID_Angular.output += PID_Angular._Ki*PID_Angular._integrator;
-	PID_Angular.output += PID_Angular._Kd*PID_Angular._derivator;
-
-	if(PID_Angular.output > PID_UPPER_LIMIT) {
-		PID_Angular.output = PID_UPPER_LIMIT;
-	} else if(PID_Angular.output < PID_LOWER_LIMIT) {
-		PID_Angular.output = PID_LOWER_LIMIT;
-	}
-	PID_Angular._previous_error = PID_Angular._error;
-}
-
-
-
 void activePID(void) {
 	PID_Motor._state |= PID_ACTIVE;
 }
@@ -297,7 +212,6 @@ void TIM2_IRQHandler(void) {
 		}
 		*/
 		tickOrderDelay();
-		//tickCurrentDelayMS();
 
 		//Take sample every 10ms
 		if(PID_Motor._state&PID_ACTIVE) {

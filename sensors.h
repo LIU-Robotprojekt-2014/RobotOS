@@ -80,10 +80,4 @@ uint8_t checkLeftWall(void);
 uint8_t checkRightWall(void);
 
 void EXTI0_IRQHandler(void);
-uint32_t i;
-uint32_t itot;
-float istop;
-float HFsensor;
-float HBsensor;
-float wall;
 #endif

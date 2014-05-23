@@ -22,14 +22,8 @@
 
 #define PLATFORM_PID_THRESHOLD 30
 
-//TODO: RECALIBRATE (GO LOWER)
-//#define MOTOR_LEFT_TICKS 255
-//#define MOTOR_RIGHT_TICKS 270
-//#define MOTOR_LEFT_TICKS 258
-//#define MOTOR_RIGHT_TICKS 290
 #define MOTOR_LEFT_TICKS 232
 #define MOTOR_RIGHT_TICKS 234
-//Good right turn 246, 240 for "under turn"
 
 #define PLATFORM_STOP 0
 #define PLATFORM_FORWARD 1
@@ -99,9 +93,8 @@ void TIM_Config(void);
 void PWM_Config(int period);
 void PWM_SetDC(uint16_t channel,uint16_t dutycycle);
 void init_platform(void);
-//void init_PID(void);
-//void doPID(void);
 void process_platform();
+
 int set_forward(int ls, int rs);
 int set_backward(int ls, int rs);
 int set_left(int ls, int rs);
@@ -151,8 +144,4 @@ uint8_t isPlatformMovingIntoLowerWall(void);
 uint8_t isInOuterLane(void);
 
 void platformFineAdjust(void);
-
-void platformDelay(int targetDelayMS);
-void tickCurrentDelayMS();
-
 #endif

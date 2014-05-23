@@ -118,11 +118,8 @@ void setupIR(void) {
 #endif
 
 	ADC_DMARequestAfterLastTransferCmd(ADC1, ENABLE);
-
 	ADC_DMACmd(ADC1, ENABLE); //Enable ADC1 DMA
-
 	ADC_Cmd(ADC1, ENABLE);   // Enable ADC1
-
 	ADC_SoftwareStartConv(ADC1); // Start ADC1 conversion
 }
 void setupRotary(void) {
@@ -136,19 +133,8 @@ void setupRotary(void) {
 	* @retval None
 	*/
 
-	/*
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; //used for digital output and PWM output
-	//this setting does not matter for ADC and digital read
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);*/
-
 	/* Enable SYSCFG clock */
 
-	i=0;
-	itot=0;
 
 	GPIO_InitTypeDef  GPIO_InitStructure;
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
@@ -178,19 +164,7 @@ void setupRotary(void) {
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-
-	//-------------------
-
-	//attach interrupt to GPIO
-	//Attach_GPIO_Interrupt(EXTI_PortSourceGPIOB, EXTI_PinSource1, EXTI_Line1 ,EXTI_Trigger_Rising_Falling,1 );
 }
-
-//#define SENS_TEST
-#ifdef SENS_TEST
-uint16_t sensor_i = 0;
-float sensor_array_test[2000] = {0};
-float sensor_mean = 0;
-#endif
 
 void process_sensors(void) {
 
@@ -221,23 +195,7 @@ void process_sensors(void) {
 
 	int i;
 	if(ADCConvertedValue[0] != 0xFF && ADCConvertedValue[3] != 0xFF) {
-
-#ifdef SENS_TEST
-		sensor_array_test[sensor_i++] = ADCConvertedValue[3];
-		if(sensor_i >= 2000) {
-			sensor_mean = sensor_array_test[0];
-			for(sensor_i = 1; i < 2000; i++) {
-				sensor_mean += sensor_array_test[sensor_i];
-				sensor_mean /= 2;
-			}
-			sensor_i = 0;
-		}
-#endif
-		for(i=0; i<4; i++){
-			//range[i] = 27.86*pow(derp*3/4096, (double)(-1.15));
-			//range[i] = 17.77*pow(derp*3/4096, (double)(-0.9524+ 0.1258));
-			//range[i] = 195400*pow(derp, (double)(-1.243));
-			//range[i] = (10250*pow(derp, (double)(-0.7659)))-12.84;
+		for(i=0; i<4; i++) {
 			range[i] = (5834*pow((float)ADCConvertedValue[i], (float)(-0.697)))-11.98;
 			LatestReading[i] = ADCConvertedValue[i];
 			if(range[i] > IR_SENSOR_UPPER_LIMIT) {
@@ -245,12 +203,8 @@ void process_sensors(void) {
 			} else if(range[i] < IR_SENSOR_LOWER_LIMIT) {
 				range[i] = IR_SENSOR_LOWER_LIMIT;
 			}
-
-			//S.IR[i]._latest_reading = range[i];
 			ADCConvertedValue[i] = 0xFF;
 		}
-		//HFsensor=range[IR_SENSOR_RB];
-		//HBsensor=range[1];
 		checkWallDistance();
 	}
 }
@@ -314,15 +268,6 @@ uint8_t checkBackLeft(void) {
 	}
 	return 0;
 }
-
-/*
-uint8_t checkLeftWall(void) {
-	if((S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
-		return 1;
-	}
-	return 0;
-}
-*/
 
 uint8_t checkLeftWall(void) {
 	if((S.ir_state&IR_SENSOR_GOT_WALL_LF)&&(S.ir_state&IR_SENSOR_GOT_WALL_LB)) {
@@ -391,14 +336,11 @@ void EXTI1_IRQHandler(void) {
 	//check if EXTI line is asserted
 	if(EXTI_GetITStatus(EXTI_Line1) != RESET) {
 		EXTI_ClearFlag(EXTI_Line1); //clear interrupt
-		//i++;
-		//itot++;
-		//For speed
-		//S.ROT.tick++;
+
+		//Quick Fix.
 		rotaryDriverTick();
 		rotaryDriverTick();
 		tickOrder();
 		tickOrder();
-		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 	}
 }

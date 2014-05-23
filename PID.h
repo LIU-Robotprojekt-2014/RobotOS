@@ -46,8 +46,6 @@ typedef struct PID_Params {
 
 
 void init_PID(void);
-void _init_PID_Angular(void);
-void _init_PID_Distance(void);
 void process_PID(void);
 void setupTimer(float interval);
 void setPIDValue(float val);
