@@ -27,7 +27,7 @@
 //#define MOTOR_RIGHT_TICKS 270
 //#define MOTOR_LEFT_TICKS 258
 //#define MOTOR_RIGHT_TICKS 290
-#define MOTOR_LEFT_TICKS 240
+#define MOTOR_LEFT_TICKS 232
 #define MOTOR_RIGHT_TICKS 234
 //Good right turn 246, 240 for "under turn"
 

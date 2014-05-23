@@ -57,7 +57,7 @@ void init_PID(void) {
 	PID_Motor.output			= 0;
 	PID_Motor.values_to_mean 	= 0;
 
-	PID_P_Small._Kp = 8; //12
+	PID_P_Small._Kp = 6; //12
 	PID_P_Small._Ki = 0.1;
 	PID_P_Small._Kd = 0.1;
 

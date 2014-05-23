@@ -343,16 +343,16 @@ void orderStartForward(void) {
 		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(7));
 	}
 	*/
-	send_xy(toArray(MP.x_pos), toArray(MP.y_pos));
+	//send_xy(toArray(MP.x_pos), toArray(MP.y_pos));
 
 	if(isPlatformMovingIntoRightWall()) {
-		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(6));
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(7));
 	} else if (isPlatformMovingIntoLeftWall()) {
-		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(9));
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(8));
 	} else if (isPlatformMovingIntoUpperWall()) {
-		setOrderTargetTicks(getOrderTargetTicks()+cmtoticks(5));
+		setOrderTargetTicks(getOrderTargetTicks()+cmtoticks(9));
 	} else if (isPlatformMovingIntoLowerWall()) {
-		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(1));
+		setOrderTargetTicks(getOrderTargetTicks()-cmtoticks(3));
 	}
 
 	if(getOrderTargetTicks() >= cmtoticks(PLATFORM_PID_THRESHOLD)) {
@@ -368,7 +368,7 @@ void orderStartForward(void) {
 
 	if(getOrderLengthToWall() < 8.0 || MP.order_length < 30) {
 		set_forward(MOTOR_REDUCED_SPEED, MOTOR_REDUCED_SPEED);
-		setOrderTargetTicks(getOrderTargetTicks()+cmtoticks(6));
+		setOrderTargetTicks(getOrderTargetTicks()+cmtoticks(5));
 	} else {
 		set_forward(MOTOR_DEFAULT_SPEED, MOTOR_DEFAULT_SPEED);
 	}
